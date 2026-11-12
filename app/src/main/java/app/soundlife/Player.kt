@@ -338,7 +338,7 @@ internal fun SettingsDialog(onClose: () -> Unit) {
                         TextButton(onClick = {
                             scope.launch {
                                 try {
-                                    withContext(Dispatchers.IO) { Profile.setNick(nickIn) }
+                                    withContext(Dispatchers.IO) { Profile.saveNick(nickIn) }
                                     pfMsg = ""
                                 } catch (e: Exception) {
                                     pfMsg = e.message ?: "Не удалось сохранить"
@@ -407,7 +407,7 @@ internal fun SettingsDialog(onClose: () -> Unit) {
                 }
                 Spacer(Modifier.width(12.dp))
                 Switch(
-                    checked = Settings.mix, onCheckedChange = { Settings.setMix(it) },
+                    checked = Settings.mix, onCheckedChange = { Settings.changeMix(it) },
                     colors = SwitchDefaults.colors(checkedTrackColor = Acc, checkedThumbColor = OnAcc),
                 )
             }

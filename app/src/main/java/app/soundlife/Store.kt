@@ -173,7 +173,7 @@ object Settings {
         siteT = p.getLong("site_set_t", 0L)
         Palette.set(p.getLong("site_bg", 0xFF000000L))
     }
-    fun setMix(v: Boolean) { mix = v; sp.edit().putBoolean(KEY_MIX, v).apply() }
+    fun changeMix(v: Boolean) { mix = v; sp.edit().putBoolean(KEY_MIX, v).apply() }
     fun setAccent(i: Int) {
         accentIx = i
         accentCustom = null

@@ -42,7 +42,7 @@ object Profile {
     }
 
     /** Новый ник: латиница, цифры, _ и точка, 3–20 знаков (как на сайте). Бросает исключение с текстом. */
-    fun setNick(raw: String) {
+    fun saveNick(raw: String) {
         val n = raw.trim().lowercase().removePrefix("@")
         if (!Regex("^[a-z0-9_.]{3,20}$").matches(n)) {
             throw RuntimeException("Ник: 3–20 знаков, только a–z, 0–9, _ и точка")
