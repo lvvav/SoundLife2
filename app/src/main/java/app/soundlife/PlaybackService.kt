@@ -1,0 +1,127 @@
+package app.soundlife
+
+import android.content.Intent
+import android.content.SharedPreferences
+import android.os.Bundle
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.CommandButton
+import androidx.media3.session.MediaSession
+import androidx.media3.session.MediaSessionService
+import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionResult
+import com.google.common.collect.ImmutableList
+import com.google.common.util.concurrent.Futures
+import com.google.common.util.concurrent.ListenableFuture
+
+val CMD_LIKE = SessionCommand("app.soundlife.LIKE", Bundle.EMPTY)
+val CMD_SHUFFLE = SessionCommand("app.soundlife.SHUFFLE", Bundle.EMPTY)
+
+/**
+ * Фоновый сервис плеера. Шторка и экран блокировки получают:
+ * ♥ (лайк), 🔀 (перемешка) и стандартные ⏮ ⏯ ⏭.
+ * Тумблер «поверх других приложений» отключает захват аудиофокуса.
+ */
+class PlaybackService : MediaSessionService() {
+    private var session: MediaSession? = null
+    private lateinit var player: ExoPlayer
+
+    private val audioAttrs = AudioAttributes.Builder()
+        .setUsage(C.USAGE_MEDIA)
+        .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+        .build()
+
+    // Ссылка хранится в поле, иначе слушатель настроек может быть собран GC
+    private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == Settings.KEY_MIX) {
+            Settings.init(this)
+            applyFocus()
+        }
+    }
+
+    private fun applyFocus() {
+        // mix = true  -> фокус НЕ берём: музыка играет вместе с TikTok и т.п.
+        // mix = false -> обычное поведение: чужое видео ставит музыку на паузу
+        player.setAudioAttributes(audioAttrs, !Settings.mix)
+    }
+
+    private fun layout(): ImmutableList<CommandButton> {
+        val liked = Favorites.has(player.currentMediaItem?.mediaId)
+        val shuffle = player.shuffleModeEnabled
+        val like = CommandButton.Builder()
+            .setDisplayName(if (liked) "Убрать из любимого" else "В любимое")
+            .setIconResId(if (liked) R.drawable.ic_heart_filled else R.drawable.ic_heart)
+            .setSessionCommand(CMD_LIKE)
+            .build()
+        val shuf = CommandButton.Builder()
+            .setDisplayName(if (shuffle) "Перемешка: вкл" else "Перемешка: выкл")
+            .setIconResId(if (shuffle) R.drawable.ic_shuffle_on else R.drawable.ic_shuffle_off)
+            .setSessionCommand(CMD_SHUFFLE)
+            .build()
+        return ImmutableList.of(like, shuf)
+    }
+
+    private fun refresh() { session?.setCustomLayout(layout()) }
+
+    override fun onCreate() {
+        super.onCreate()
+        Favorites.init(this)
+        Settings.init(this)
+        player = ExoPlayer.Builder(this)
+            .setHandleAudioBecomingNoisy(true)
+            .setWakeMode(C.WAKE_MODE_NETWORK)
+            .build()
+        applyFocus()
+        player.repeatMode = Player.REPEAT_MODE_ALL
+        player.addListener(object : Player.Listener {
+            override fun onMediaItemTransition(item: MediaItem?, reason: Int) = refresh()
+            override fun onShuffleModeEnabledChanged(enabled: Boolean) = refresh()
+        })
+        Favorites.onChange = { refresh() }
+        prefs(this).registerOnSharedPreferenceChangeListener(prefListener)
+
+        session = MediaSession.Builder(this, player)
+            .setCallback(object : MediaSession.Callback {
+                override fun onConnect(
+                    session: MediaSession, controller: MediaSession.ControllerInfo,
+                ): MediaSession.ConnectionResult {
+                    val cmds = MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
+                        .add(CMD_LIKE).add(CMD_SHUFFLE).build()
+                    return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+                        .setAvailableSessionCommands(cmds)
+                        .setCustomLayout(layout())
+                        .build()
+                }
+
+                override fun onCustomCommand(
+                    session: MediaSession, controller: MediaSession.ControllerInfo,
+                    customCommand: SessionCommand, args: Bundle,
+                ): ListenableFuture<SessionResult> {
+                    when (customCommand.customAction) {
+                        CMD_LIKE.customAction -> player.currentMediaItem?.mediaId?.let { Favorites.toggle(it) }
+                        CMD_SHUFFLE.customAction -> player.shuffleModeEnabled = !player.shuffleModeEnabled
+                    }
+                    refresh()
+                    return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+                }
+            })
+            .build()
+    }
+
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo) = session
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        if (!player.playWhenReady || player.mediaItemCount == 0) stopSelf()
+    }
+
+    override fun onDestroy() {
+        prefs(this).unregisterOnSharedPreferenceChangeListener(prefListener)
+        Favorites.onChange = null
+        session?.release(); session = null
+        player.release()
+        super.onDestroy()
+    }
+}
