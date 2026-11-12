@@ -1,6 +1,15 @@
 package app.soundlife
 
+import android.content.Context
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
+import android.net.Uri
+import androidx.media3.datasource.DataSpec
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.ResolvingDataSource
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import java.io.IOException
 import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.media3.common.AudioAttributes
@@ -28,6 +37,20 @@ val CMD_SHUFFLE = SessionCommand("app.soundlife.SHUFFLE", Bundle.EMPTY)
 class PlaybackService : MediaSessionService() {
     private var session: MediaSession? = null
     private lateinit var player: ExoPlayer
+    private val main = Handler(Looper.getMainLooper())
+    private var ticks = 0
+
+    /** Раз в секунду, пока играет: считаем время прослушивания (как на сайте). */
+    private val ticker = object : Runnable {
+        override fun run() {
+            if (::player.isInitialized && player.isPlaying) {
+                val dur = if (player.duration > 0) player.duration / 1000.0 else 0.0
+                Stats.tick(player.currentMediaItem?.mediaId.orEmpty(), dur)
+                if (++ticks % 30 == 0) Stats.saveIfDirty()
+            }
+            main.postDelayed(this, 1000)
+        }
+    }
 
     private val audioAttrs = AudioAttributes.Builder()
         .setUsage(C.USAGE_MEDIA)
@@ -70,14 +93,22 @@ class PlaybackService : MediaSessionService() {
         super.onCreate()
         Favorites.init(this)
         Settings.init(this)
+        Auth.init(this)
+        Stats.init(this)
+        main.post(ticker)
         player = ExoPlayer.Builder(this)
             .setHandleAudioBecomingNoisy(true)
             .setWakeMode(C.WAKE_MODE_NETWORK)
+            .setMediaSourceFactory(DefaultMediaSourceFactory(ymDataFactory(this)))
             .build()
         applyFocus()
         player.repeatMode = Player.REPEAT_MODE_ALL
         player.addListener(object : Player.Listener {
-            override fun onMediaItemTransition(item: MediaItem?, reason: Int) = refresh()
+            override fun onMediaItemTransition(item: MediaItem?, reason: Int) {
+                refresh()
+                Stats.leave(reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO)
+                item?.mediaId?.let { Stats.started(it) }
+            }
             override fun onShuffleModeEnabledChanged(enabled: Boolean) = refresh()
         })
         Favorites.onChange = { refresh() }
@@ -111,6 +142,24 @@ class PlaybackService : MediaSessionService() {
             .build()
     }
 
+    /** Адреса Яндекса временные: поток получаем в момент открытия (soundlife-ym://id → https-ссылка). */
+    private fun ymDataFactory(ctx: Context) = ResolvingDataSource.Factory(
+        DefaultDataSource.Factory(ctx),
+        object : ResolvingDataSource.Resolver {
+            override fun resolveDataSpec(spec: DataSpec): DataSpec {
+                if (spec.uri.scheme != "soundlife-ym") return spec
+                val url = try {
+                    Ym.streamUrl(spec.uri.host.orEmpty())
+                } catch (e: Exception) {
+                    throw IOException(e.message)
+                }
+                return spec.buildUpon().setUri(Uri.parse(url)).build()
+            }
+
+            override fun resolveReportedUri(uri: Uri): Uri = uri
+        },
+    )
+
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo) = session
 
     override fun onTaskRemoved(rootIntent: Intent?) {
@@ -120,6 +169,8 @@ class PlaybackService : MediaSessionService() {
     override fun onDestroy() {
         prefs(this).unregisterOnSharedPreferenceChangeListener(prefListener)
         Favorites.onChange = null
+        main.removeCallbacks(ticker)
+        Stats.saveIfDirty()
         session?.release(); session = null
         player.release()
         super.onDestroy()
