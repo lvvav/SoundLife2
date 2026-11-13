@@ -524,6 +524,10 @@ private fun AlbumCard(a: AlbumInfo, onClick: () -> Unit) {
 @Composable
 private fun SearchScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: (Detail) -> Unit) {
     var q by rememberSaveable { mutableStateOf("") }
+    var srcTab by rememberSaveable { mutableIntStateOf(0) }
+    val showL = srcTab == 0 || srcTab == 1
+    val showI = srcTab == 0 || srcTab == 2
+    val showY = srcTab == 0 || srcTab == 3
     val query = q.trim().lowercase()
     /** Результаты iTunes (30-секундные отрывки). Запрос после паузы 450 мс, от 3 символов. */
     var itRes by remember { mutableStateOf<List<Track>>(emptyList()) }
@@ -577,32 +581,41 @@ private fun SearchScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen
             Text("Ничего не найдено", color = Mut, modifier = Modifier.padding(horizontal = 16.dp))
             return@Column
         }
+        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            itemsIndexed(listOf("Все", "Медиатека", "iTunes", "Яндекс")) { i, label ->
+                FilterChip(
+                    selected = srcTab == i, onClick = { srcTab = i }, label = { Text(label) },
+                    colors = FilterChipDefaults.filterChipColors(containerColor = Hover, labelColor = TextC, selectedContainerColor = Acc, selectedLabelColor = OnAcc),
+                    border = null,
+                )
+            }
+        }
         LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
-            if (ar.isNotEmpty()) {
+            if (ar.isNotEmpty() && showL) {
                 item { SectionTitle("Артисты") }
                 items(ar, key = { "a:" + it.first }) { a ->
                     LibRow(a.first, "Артист · ${plural(a.second.size)}", a.first, round = true, img = a.second.firstOrNull { it.img.isNotBlank() }?.img.orEmpty()) { onOpen(Detail.Artist(a.first)) }
                 }
             }
-            if (al.isNotEmpty()) {
+            if (al.isNotEmpty() && showL) {
                 item { SectionTitle("Альбомы") }
                 items(al, key = { "b:" + it.name }) { a ->
                     LibRow(a.name, "Альбом · ${a.artist}", a.name, img = a.img) { onOpen(Detail.Album(a.name)) }
                 }
             }
-            if (tr.isNotEmpty()) {
+            if (tr.isNotEmpty() && showL) {
                 item { SectionTitle("Треки") }
                 itemsIndexed(tr, key = { _, t -> "t:" + t.path }) { i, t ->
                     TrackRow(t, playing = ps.mediaId == t.path) { c?.playTracks(tr, i) }
                 }
             }
-            if (ymAr.isNotEmpty()) {
+            if (ymAr.isNotEmpty() && showY) {
                 item { SectionTitle("Яндекс · исполнители") }
                 items(ymAr, key = { "yar:" + it.id }) { a ->
                     LibRow(a.name, "Исполнитель · Яндекс Музыка", a.name, round = true, img = a.img) { onOpen(Detail.YmArtistPage(a.id, a.name, a.img)) }
                 }
             }
-            if (ymAl.isNotEmpty()) {
+            if (ymAl.isNotEmpty() && showY) {
                 item { SectionTitle("Яндекс · альбомы") }
                 items(ymAl, key = { "yal:" + it.id }) { a ->
                     LibRow(a.title, "Альбом · ${a.artist}" + (if (a.year.isNotBlank()) " · ${a.year}" else ""), a.title, img = a.img) {
@@ -610,13 +623,13 @@ private fun SearchScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen
                     }
                 }
             }
-            if (ymRes.isNotEmpty()) {
+            if (ymRes.isNotEmpty() && showY) {
                 item { SectionTitle("Яндекс Музыка · полные треки") }
                 itemsIndexed(ymRes, key = { _, t -> t.path }) { i, t ->
                     TrackRow(t, playing = ps.mediaId == t.path) { c?.playTracks(ymRes, i) }
                 }
             }
-            if (itRes.isNotEmpty()) {
+            if (itRes.isNotEmpty() && showI) {
                 item { SectionTitle("iTunes · отрывки по 30 секунд") }
                 itemsIndexed(itRes, key = { _, t -> t.path }) { i, t ->
                     TrackRow(t, playing = ps.mediaId == t.path) { c?.playTracks(itRes, i) }
