@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -86,186 +88,222 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
         value = withContext(Dispatchers.IO) { Lastfm.get(ps.artist, ps.title) }
     }
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        val pctx = LocalContext.current
+        val album = c.mediaMetadata.albumTitle?.toString().orEmpty()
+        var speed by remember { mutableStateOf(1f) }
+        var sleepMin by remember { mutableStateOf(0) }
+        androidx.compose.runtime.LaunchedEffect(sleepMin) {
+            if (sleepMin > 0) {
+                kotlinx.coroutines.delay(sleepMin * 60_000L)
+                c.pause()
+                sleepMin = 0
+            }
+        }
+        val upcoming = remember(ps.mediaId) {
+            (1..5).mapNotNull { k ->
+                val i = c.currentMediaItemIndex + k
+                if (i < c.mediaItemCount) c.getMediaItemAt(i).mediaMetadata.let { m ->
+                    Triple(m.title?.toString().orEmpty(), m.artist?.toString().orEmpty(), m.artworkUri?.toString().orEmpty())
+                } else null
+            }
+        }
         Column(
-            Modifier.fillMaxSize().background(Bg).windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            Modifier.fillMaxSize().background(Bg).windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 20.dp),
         ) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            // Верхняя строка: свернуть | «Из альбома» + название | меню
+            Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onClose) { Icon(Icons.Filled.KeyboardArrowDown, "Свернуть", tint = TextC) }
-                Text(
-                    "Сейчас играет", color = Mut, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center, modifier = Modifier.weight(1f),
-                )
-                TextButton(onClick = { showLy = !showLy }) { Text(if (showLy) "Обложка" else "Текст", color = Acc) }
+                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("ИЗ АЛЬБОМА", color = Mut, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                    Text(album.ifBlank { "Сейчас играет" }, color = TextC, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
                 IconButton(onClick = { ps.mediaId?.let { Playlists.pendingTrack = it } }, enabled = ps.mediaId != null) {
-                    Icon(Icons.Filled.PlaylistAdd, "В плейлист", tint = TextC)
+                    Icon(Icons.Filled.MoreVert, "Меню трека", tint = TextC)
                 }
             }
 
-            Spacer(Modifier.height(12.dp))
-            if (showLy) {
-                LyricsView(lyrs, ps.position, Modifier.weight(1f))
-            } else {
-                BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    val side = minOf(maxWidth, 360.dp)
-                    val breath = rememberInfiniteTransition(label = "breathe")
-                    val breathScale by breath.animateFloat(
-                        initialValue = 0.97f, targetValue = 1.0f,
-                        animationSpec = infiniteRepeatable(tween(2400), RepeatMode.Reverse), label = "scale",
-                    )
-                    val sc = if (ps.isPlaying) breathScale else 1f
-                    Box(Modifier.graphicsLayer { scaleX = sc; scaleY = sc }) {
-                        Cover(ps.title.ifBlank { "SoundLife" }, side, square = false, img = ps.artUrl)
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                Spacer(Modifier.height(12.dp))
+                if (showLy) {
+                    Box(Modifier.fillMaxWidth().height(420.dp).clip(ShapeCard).background(Panel).padding(16.dp)) {
+                        LyricsView(lyrs, ps.position, Modifier.fillMaxSize())
+                    }
+                    TextButton(onClick = { showLy = false }) { Text("Обложка", color = Acc) }
+                } else {
+                    BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        val side = maxWidth
+                        val breath = rememberInfiniteTransition(label = "breathe")
+                        val breathScale by breath.animateFloat(
+                            initialValue = 0.98f, targetValue = 1.0f,
+                            animationSpec = infiniteRepeatable(tween(2400), RepeatMode.Reverse), label = "scale",
+                        )
+                        val sc = if (ps.isPlaying) breathScale else 1f
+                        Box(Modifier.size(side).graphicsLayer { scaleX = sc; scaleY = sc }.clip(RoundedCornerShape(16.dp))) {
+                            Cover(ps.title.ifBlank { "SoundLife" }, side, square = true, img = ps.artUrl)
+                        }
                     }
                 }
-            }
 
-            Spacer(Modifier.height(24.dp))
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    AnimatedContent(
-                        targetState = ps.title.ifBlank { "Ничего не играет" },
-                        transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(150)) },
-                        label = "playerTitle",
-                    ) { tt ->
-                        Text(
-                            tt, color = TextC, fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                Spacer(Modifier.height(18.dp))
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        AnimatedContent(
+                            targetState = ps.title.ifBlank { "Ничего не играет" },
+                            transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(150)) },
+                            label = "playerTitle",
+                        ) { tt ->
+                            Text(tt, color = TextC, fontSize = 24.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                        Text(ps.artist, color = Mut, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    LikeButton(ps.mediaId)
+                }
+
+                Spacer(Modifier.height(14.dp))
+                var drag by remember { mutableStateOf<Float?>(null) }
+                val dur = ps.duration.coerceAtLeast(1L).toFloat()
+                Slider(
+                    value = drag ?: ps.position.toFloat().coerceIn(0f, dur),
+                    onValueChange = { drag = it },
+                    onValueChangeFinished = { drag?.let { c.seekTo(it.toLong()) }; drag = null },
+                    valueRange = 0f..dur,
+                    colors = SliderDefaults.colors(thumbColor = Acc, activeTrackColor = Acc, inactiveTrackColor = Line),
+                )
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(fmt((drag ?: ps.position.toFloat()).toLong()), color = Mut, fontSize = 12.sp)
+                    Text(fmt(ps.duration), color = Mut, fontSize = 12.sp)
+                }
+
+                Spacer(Modifier.height(10.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { c.shuffleModeEnabled = !c.shuffleModeEnabled }) {
+                        Icon(Icons.Filled.Shuffle, "Перемешать", tint = if (ps.shuffle) Acc else Mut)
+                    }
+                    IconButton(onClick = { c.seekToPrevious() }) {
+                        Icon(Icons.Filled.SkipPrevious, "Назад", tint = TextC, modifier = Modifier.size(40.dp))
+                    }
+                    val pressSrc = remember { MutableInteractionSource() }
+                    val pressed by pressSrc.collectIsPressedAsState()
+                    val pressScale by animateFloatAsState(if (pressed) 0.88f else 1f, label = "press")
+                    Box(
+                        Modifier.size(78.dp).graphicsLayer { scaleX = pressScale; scaleY = pressScale }
+                            .clip(CircleShape).background(TextC)
+                            .clickable(interactionSource = pressSrc, indication = null) { if (c.isPlaying) c.pause() else c.play() },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            if (ps.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                            "Пауза/играть", tint = Bg, modifier = Modifier.size(40.dp),
                         )
                     }
-                    Text(ps.artist, color = Mut, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    lfm?.let { i ->
-                        Text("Слушателей в мире: ${Lastfm.fmt(i.listeners)}", color = Mut, fontSize = 12.sp, maxLines = 1)
-                        if (i.tags.isNotEmpty()) {
-                            Text(i.tags.joinToString(", "), color = Mut, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    IconButton(onClick = { c.seekToNext() }) {
+                        Icon(Icons.Filled.SkipNext, "Далее", tint = TextC, modifier = Modifier.size(40.dp))
+                    }
+                    IconButton(onClick = {
+                        c.repeatMode = when (c.repeatMode) {
+                            Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
+                            Player.REPEAT_MODE_ONE -> Player.REPEAT_MODE_OFF
+                            else -> Player.REPEAT_MODE_ALL
+                        }
+                    }) {
+                        Icon(
+                            if (ps.repeat == Player.REPEAT_MODE_ONE) Icons.Filled.RepeatOne else Icons.Filled.Repeat,
+                            "Повтор", tint = if (ps.repeat == Player.REPEAT_MODE_OFF) Mut else Acc,
+                        )
+                    }
+                }
+
+                // Кнопки: скорость, таймер сна, скачать, поделиться
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = {
+                            speed = when (speed) { 1f -> 1.25f; 1.25f -> 1.5f; 1.5f -> 2f; else -> 1f }
+                            c.setPlaybackSpeed(speed)
+                        },
+                        shape = RoundedCornerShape(50), border = BorderStroke(1.dp, Line),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextC),
+                    ) { Text(if (speed == 1f) "1×" else "${speed}×", fontSize = 13.sp) }
+                    OutlinedButton(
+                        onClick = { sleepMin = when (sleepMin) { 0 -> 15; 15 -> 30; 30 -> 60; else -> 0 } },
+                        shape = RoundedCornerShape(50), border = BorderStroke(1.dp, Line),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextC),
+                    ) { Text(if (sleepMin == 0) "Таймер сна" else "Сон через $sleepMin мин", fontSize = 13.sp) }
+                    OutlinedButton(
+                        onClick = {
+                            val id = ps.mediaId
+                            val repo = BuildConfig.GH_REPOS.split(',').map { it.trim() }.firstOrNull { it.isNotEmpty() }
+                            if (id != null && repo != null) {
+                                val req = android.app.DownloadManager.Request(android.net.Uri.parse(Library.rawUrl(repo, id)))
+                                    .setTitle(ps.title)
+                                    .setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                                    .setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_MUSIC, "SoundLife/" + id.substringAfterLast('/'))
+                                (pctx.getSystemService(android.content.Context.DOWNLOAD_SERVICE) as android.app.DownloadManager).enqueue(req)
+                                android.widget.Toast.makeText(pctx, "Скачивание начато", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        shape = RoundedCornerShape(50), border = BorderStroke(1.dp, Line),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextC),
+                    ) { Text("Скачать", fontSize = 13.sp) }
+                    OutlinedButton(
+                        onClick = {
+                            val text = "${ps.artist} — ${ps.title}"
+                            pctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), "Поделиться"))
+                        },
+                        shape = RoundedCornerShape(50), border = BorderStroke(1.dp, Line),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextC),
+                    ) { Text("Поделиться", fontSize = 13.sp) }
+                }
+
+                // Текст песни
+                if (!showLy) {
+                    Spacer(Modifier.height(16.dp))
+                    Column(Modifier.fillMaxWidth().clip(ShapeCard).background(Panel).padding(16.dp)) {
+                        Text("Текст", color = TextC, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.height(8.dp))
+                        LyricsView(lyrs, ps.position, Modifier.fillMaxWidth().height(120.dp))
+                        TextButton(onClick = { showLy = true }) { Text("Показать текст", color = Acc) }
+                    }
+                }
+
+                // О треке
+                Spacer(Modifier.height(22.dp))
+                Text("О ТРЕКЕ", color = Mut, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(6.dp))
+                val fileName = ps.mediaId?.substringAfterLast('/').orEmpty()
+                listOf(
+                    "Название" to ps.title,
+                    "Исполнитель" to ps.artist,
+                    "Альбом" to album,
+                    "Длительность" to fmt(ps.duration),
+                    "Формат" to fileName.substringAfterLast('.', "").uppercase(),
+                    "Файл" to fileName,
+                ).filter { it.second.isNotBlank() }.forEach { (k, v) ->
+                    Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(k, color = Mut, fontSize = 14.sp)
+                        Spacer(Modifier.weight(1f))
+                        Text(v, color = TextC, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1.4f), textAlign = TextAlign.End)
+                    }
+                    HorizontalDivider(color = Line)
+                }
+
+                // Далее
+                if (upcoming.isNotEmpty()) {
+                    Spacer(Modifier.height(22.dp))
+                    Text("ДАЛЕЕ", color = Mut, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(6.dp))
+                    upcoming.forEach { (tt, aa, art) ->
+                        Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Cover(tt, 48.dp, img = art)
+                            Spacer(Modifier.width(12.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(tt, color = TextC, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(aa, color = Mut, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
                         }
                     }
                 }
-                LikeButton(ps.mediaId)
+                Spacer(Modifier.height(24.dp))
             }
-
-            // Кнопки как на сайте: скорость и поделиться
-            var speed by remember { mutableStateOf(1f) }
-            val pctx = LocalContext.current
-            Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(
-                    onClick = {
-                        speed = when (speed) { 1f -> 1.25f; 1.25f -> 1.5f; 1.5f -> 2f; else -> 1f }
-                        c.setPlaybackSpeed(speed)
-                    },
-                    shape = ShapeSmall,
-                    border = BorderStroke(1.dp, Line),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TextC),
-                ) { Text(if (speed == 1f) "1×" else "${speed}×", fontSize = 13.sp) }
-                OutlinedButton(
-                    onClick = {
-                        val text = "${ps.artist} — ${ps.title}"
-                        pctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), "Поделиться"))
-                    },
-                    shape = ShapeSmall,
-                    border = BorderStroke(1.dp, Line),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TextC),
-                ) { Text("Поделиться", fontSize = 13.sp) }
-            }
-            // Таймер сна, скачивание и «Далее», как на сайте
-            var sleepMin by remember { mutableStateOf(0) }
-            androidx.compose.runtime.LaunchedEffect(sleepMin) {
-                if (sleepMin > 0) {
-                    kotlinx.coroutines.delay(sleepMin * 60_000L)
-                    c.pause()
-                    sleepMin = 0
-                }
-            }
-            Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(
-                    onClick = { sleepMin = when (sleepMin) { 0 -> 15; 15 -> 30; 30 -> 60; else -> 0 } },
-                    shape = ShapeSmall,
-                    border = BorderStroke(1.dp, Line),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TextC),
-                ) { Text(if (sleepMin == 0) "Таймер сна" else "Сон через $sleepMin мин", fontSize = 13.sp) }
-                OutlinedButton(
-                    onClick = {
-                        val id = ps.mediaId
-                        val repo = BuildConfig.GH_REPOS.split(',').map { it.trim() }.firstOrNull { it.isNotEmpty() }
-                        if (id != null && repo != null) {
-                            val req = android.app.DownloadManager.Request(android.net.Uri.parse(Library.rawUrl(repo, id)))
-                                .setTitle(ps.title)
-                                .setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                                .setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_MUSIC, "SoundLife/" + id.substringAfterLast('/'))
-                            (pctx.getSystemService(android.content.Context.DOWNLOAD_SERVICE) as android.app.DownloadManager).enqueue(req)
-                            android.widget.Toast.makeText(pctx, "Скачивание начато", android.widget.Toast.LENGTH_SHORT).show()
-                        }
-                    },
-                    shape = ShapeSmall,
-                    border = BorderStroke(1.dp, Line),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TextC),
-                ) { Text("Скачать", fontSize = 13.sp) }
-            }
-            val upcoming = remember(ps.mediaId) {
-                (1..5).mapNotNull { k ->
-                    val i = c.currentMediaItemIndex + k
-                    if (i < c.mediaItemCount) c.getMediaItemAt(i).mediaMetadata.title?.toString() else null
-                }
-            }
-            if (upcoming.isNotEmpty()) {
-                Spacer(Modifier.height(10.dp))
-                Text("Далее", color = Mut, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
-                upcoming.forEach { Text(it, color = TextC, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start) }
-            }
-            Spacer(Modifier.height(12.dp))
-            var drag by remember { mutableStateOf<Float?>(null) }
-            val dur = ps.duration.coerceAtLeast(1L).toFloat()
-            Slider(
-                value = drag ?: ps.position.toFloat().coerceIn(0f, dur),
-                onValueChange = { drag = it },
-                onValueChangeFinished = { drag?.let { c.seekTo(it.toLong()) }; drag = null },
-                valueRange = 0f..dur,
-                colors = SliderDefaults.colors(thumbColor = Acc, activeTrackColor = Acc, inactiveTrackColor = Line),
-            )
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(fmt((drag ?: ps.position.toFloat()).toLong()), color = Mut, fontSize = 12.sp)
-                Text(fmt(ps.duration), color = Mut, fontSize = 12.sp)
-            }
-
-            Spacer(Modifier.height(16.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { c.shuffleModeEnabled = !c.shuffleModeEnabled }) {
-                    Icon(Icons.Filled.Shuffle, "Перемешать", tint = if (ps.shuffle) Acc else Mut)
-                }
-                IconButton(onClick = { c.seekToPrevious() }) {
-                    Icon(Icons.Filled.SkipPrevious, "Назад", tint = TextC, modifier = Modifier.size(40.dp))
-                }
-                val pressSrc = remember { MutableInteractionSource() }
-                val pressed by pressSrc.collectIsPressedAsState()
-                val pressScale by animateFloatAsState(if (pressed) 0.88f else 1f, label = "press")
-                Box(
-                    Modifier.size(72.dp).graphicsLayer { scaleX = pressScale; scaleY = pressScale }
-                        .clip(CircleShape).background(Acc)
-                        .clickable(interactionSource = pressSrc, indication = null) { if (c.isPlaying) c.pause() else c.play() },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        if (ps.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        "Пауза/играть", tint = OnAcc, modifier = Modifier.size(40.dp),
-                    )
-                }
-                IconButton(onClick = { c.seekToNext() }) {
-                    Icon(Icons.Filled.SkipNext, "Далее", tint = TextC, modifier = Modifier.size(40.dp))
-                }
-                IconButton(onClick = {
-                    c.repeatMode = when (c.repeatMode) {
-                        Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
-                        Player.REPEAT_MODE_ONE -> Player.REPEAT_MODE_OFF
-                        else -> Player.REPEAT_MODE_ALL
-                    }
-                }) {
-                    Icon(
-                        if (ps.repeat == Player.REPEAT_MODE_ONE) Icons.Filled.RepeatOne else Icons.Filled.Repeat,
-                        "Повтор", tint = if (ps.repeat == Player.REPEAT_MODE_OFF) Mut else Acc,
-                    )
-                }
-            }
-            Spacer(Modifier.weight(1f))
         }
     }
 }
