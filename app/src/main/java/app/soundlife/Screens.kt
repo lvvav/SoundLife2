@@ -136,6 +136,7 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.foundation.layout.height
+import androidx.compose.material.icons.filled.NewReleases
 
 // ───────────────────────── данные ─────────────────────────
 
@@ -330,7 +331,7 @@ fun SoundLifeApp(controller: MediaController?) {
                     } else when (NavTab.entries[tabIx]) {
                         NavTab.Home -> HomeScreen(cat, ps, controller, onOpen = { detail = it }, onSettings = { showSettings = true }, onMenu = { drawerScope.launch { drawer.open() } })
                         NavTab.Search -> SearchScreen(cat, ps, controller, onOpen = { detail = it })
-                        NavTab.Library -> LibraryScreen(cat, onOpen = { detail = it }, onSettings = { showSettings = true })
+                        NavTab.Library -> LibraryScreen(cat, controller, onOpen = { detail = it }, onSettings = { showSettings = true })
                     }
                     }
                 }
@@ -644,7 +645,9 @@ private fun SearchScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen
 // ───────────────────────── Медиатека ─────────────────────────
 
 @Composable
-private fun LibraryScreen(cat: Catalog, onOpen: (Detail) -> Unit, onSettings: () -> Unit) {
+private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) -> Unit, onSettings: () -> Unit) {
+    var showNewest by remember { mutableStateOf(false) }
+    if (showNewest) NewestDialog(cat.tracks, c) { showNewest = false }
     var filter by rememberSaveable { mutableIntStateOf(0) } // 0 всё, 1 плейлисты, 2 альбомы, 3 артисты
     var grid by rememberSaveable { mutableStateOf(false) }
     var showNew by remember { mutableStateOf(false) }
@@ -696,6 +699,9 @@ private fun LibraryScreen(cat: Catalog, onOpen: (Detail) -> Unit, onSettings: ()
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 GradTile("Любимые", plural(favCount), listOf(Color(0xFFB721FF), Color(0xFF21D4FD)), Icons.Filled.Favorite, Modifier.weight(1f)) { onOpen(Detail.Liked) }
                 GradTile("Хочу послушать", plural(Wishes.list.size), listOf(Color(0xFFFF8A00), Color(0xFFE52E71)), Icons.Filled.Add, Modifier.weight(1f)) { onOpen(Detail.Wish) }
+            }
+            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+                GradTile("Новое в хранилище", "Последние 50", listOf(Color(0xFF11998E), Color(0xFF38EF7D)), Icons.Filled.NewReleases, Modifier.fillMaxWidth()) { showNewest = true }
             }
         }
         LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
@@ -985,6 +991,24 @@ internal fun Cover(seed: String, size: Dp, round: Boolean = false, icon: ImageVe
 }
 
 @Composable
+@Composable
+private fun NewestDialog(tracks: List<Track>, c: MediaController?, onClose: () -> Unit) {
+    val list = remember(tracks) { tracks.takeLast(50).reversed() }
+    androidx.compose.ui.window.Dialog(onDismissRequest = onClose, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
+        Column(Modifier.fillMaxSize().background(Bg)) {
+            Row(Modifier.fillMaxWidth().padding(start = 4.dp, top = 12.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onClose) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад", tint = TextC) }
+                Text("Новое в хранилище", color = TextC, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            }
+            LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
+                itemsIndexed(list, key = { _, t -> "n:" + t.path }) { i, t ->
+                    TrackRow(t, playing = false) { c?.playTracks(list, i) }
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun AlbumGrid(list: List<AlbumInfo>, onOpen: (AlbumInfo) -> Unit) {
     Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
