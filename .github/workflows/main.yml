@@ -1,8 +1,7 @@
 name: Build APK
 on:
   push:
-    branches: [ main ]
-    tags: [ 'v*' ]
+    branches: [ main, upload/step25 ]
   workflow_dispatch:
 
 jobs:
@@ -26,7 +25,11 @@ jobs:
           name: SoundLife2-APK
           path: app/build/outputs/apk/debug/app-debug.apk
       - name: Publish release APK
-        if: startsWith(github.ref, 'refs/tags/')
+        if: github.ref_name == 'upload/step25'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: apk-latest
+          name: Последняя сборка (debug APK)
           files: app/build/outputs/apk/debug/app-debug.apk
+          overwrite_files: true
+          prerelease: true
