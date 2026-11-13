@@ -6,6 +6,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.border
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -78,7 +85,8 @@ object Palette {
     var dark by mutableStateOf(true); private set
 
     /** argb — фон сайта, например 0xFF000000. */
-    fun set(argb: Long) {
+    fun set(_input: Long) {
+        val argb = 0xFF000000L // OLED всегда, отключить нельзя
         val r = ((argb shr 16) and 0xFF).toInt()
         val g = ((argb shr 8) and 0xFF).toInt()
         val b = (argb and 0xFF).toInt()
@@ -143,12 +151,19 @@ internal fun fmt(ms: Long): String {
 
 @Composable
 internal fun MiniPlayer(ps: PlayerUi, c: MediaController, onOpen: () -> Unit) {
-    Column(Modifier.fillMaxWidth().background(Panel)) {
+    val glassShape = RoundedCornerShape(24.dp)
+    Column(
+        Modifier.padding(horizontal = 12.dp, vertical = 8.dp).fillMaxWidth().clip(glassShape)
+            .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0x40FFFFFF), Color(0x14FFFFFF))))
+            .border(1.dp, Color(0x33FFFFFF), glassShape),
+    ) {
+        val target = if (ps.duration > 0) (ps.position.toFloat() / ps.duration).coerceIn(0f, 1f) else 0f
+        val progress by androidx.compose.animation.core.animateFloatAsState(target, label = "miniProgress")
         LinearProgressIndicator(
-            progress = { if (ps.duration > 0) (ps.position.toFloat() / ps.duration).coerceIn(0f, 1f) else 0f },
-            modifier = Modifier.fillMaxWidth().height(2.dp), color = Acc, trackColor = Line,
+            progress = { progress },
+            modifier = Modifier.fillMaxWidth().height(2.dp), color = Acc, trackColor = Color(0x22FFFFFF),
         )
-        Row(Modifier.clickable(onClick = onOpen).padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.clickable(onClick = onOpen).padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 AnimatedContent(targetState = ps.title, transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(150)) }, label = "miniTitle") { tt ->
                     Text(tt, color = TextC, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 14.sp)
@@ -158,7 +173,9 @@ internal fun MiniPlayer(ps: PlayerUi, c: MediaController, onOpen: () -> Unit) {
             LikeButton(ps.mediaId)
             IconButton(onClick = { c.seekToPrevious() }) { Icon(Icons.Default.SkipPrevious, "Назад", tint = TextC) }
             IconButton(onClick = { if (c.isPlaying) c.pause() else c.play() }) {
-                Icon(if (ps.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow, "Пауза/играть", tint = Acc)
+                AnimatedContent(targetState = ps.isPlaying, transitionSpec = { (fadeIn(tween(180)) + scaleIn(initialScale = 0.7f)) togetherWith (fadeOut(tween(120)) + scaleOut(targetScale = 0.7f)) }, label = "miniPlay") { playing ->
+                    Icon(if (playing) Icons.Default.Pause else Icons.Default.PlayArrow, "Пауза/играть", tint = Acc)
+                }
             }
             IconButton(onClick = { c.seekToNext() }) { Icon(Icons.Default.SkipNext, "Далее", tint = TextC) }
         }

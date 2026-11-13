@@ -273,7 +273,11 @@ fun SoundLifeApp(controller: MediaController?) {
         contentWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
         bottomBar = {
             Column {
-                if (ps.mediaId != null && controller != null) MiniPlayer(ps, controller) { showFull = true }
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = ps.mediaId != null && controller != null,
+                    enter = androidx.compose.animation.slideInVertically(tween(320)) { it } + androidx.compose.animation.fadeIn(tween(320)),
+                    exit = androidx.compose.animation.slideOutVertically(tween(260)) { it } + androidx.compose.animation.fadeOut(tween(200)),
+                ) { if (controller != null) MiniPlayer(ps, controller) { showFull = true } }
                 NavigationBar(containerColor = Bg, tonalElevation = 0.dp) {
                     NavTab.entries.forEach { t ->
                         val sel = tabIx == t.ordinal

@@ -125,36 +125,9 @@ private fun HubMain(onAccount: () -> Unit, onPage: (String) -> Unit, onUpdates: 
 
 private class HubItem(val title: String, val sub: String, val icon: androidx.compose.ui.graphics.vector.ImageVector, val onClick: () -> Unit)
 
-private val THEME_PRESETS: List<Triple<String, Long, Long>> = listOf(
-    Triple("Тёмная", 0xFF0D0D11L, 0xFFC6FF3DL),
-    Triple("OLED", 0xFF000000L, 0xFF1ED760L),
-    Triple("Светлая", 0xFFF5F5F7L, 0xFF0A84FFL),
-    Triple("Жёлтая", 0xFF2B2400L, 0xFFFFD60AL),
-    Triple("Синяя", 0xFF0B1A33L, 0xFF4FC3F7L),
-    Triple("Розовая", 0xFF2A0D1FL, 0xFFFF4FA3L),
-    Triple("Лес", 0xFF0E1A12L, 0xFF7BD389L),
-    Triple("Закат", 0xFF2A1420L, 0xFFFF8A4CL),
-)
-
 @Composable
 private fun LookPage() {
     LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
-        item { SubHeader("Темы") }
-        item {
-            LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                items(THEME_PRESETS) { (name, bg, acc) ->
-                    Column(
-                        Modifier.width(92.dp).clip(ShapeCard).background(Color(bg))
-                            .clickable { Settings.applyPreset(bg, acc) }.padding(10.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Box(Modifier.size(32.dp).clip(CircleShape).background(Color(acc)))
-                        Spacer(Modifier.height(8.dp))
-                        Text(name, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                    }
-                }
-            }
-        }
         item { SubHeader("Цвет акцента") }
         itemsIndexed(ACCENTS) { i, (argb, name) ->
             Row(

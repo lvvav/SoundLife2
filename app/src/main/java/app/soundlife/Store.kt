@@ -190,13 +190,6 @@ object Settings {
         setAnimOn(true)
     }
     fun changeMix(v: Boolean) { mix = v; sp.edit().putBoolean(KEY_MIX, v).apply() }
-    /** Готовая тема: фон (ARGB) + акцент (ARGB). Сохраняется как пользовательская. */
-    fun applyPreset(bg: Long, acc: Long) {
-        Palette.set(bg)
-        accentCustom = acc
-        sp.edit().putLong("site_bg", bg).putLong("accent_custom", acc).apply()
-    }
-
     fun setAccent(i: Int) {
         accentIx = i
         accentCustom = null
