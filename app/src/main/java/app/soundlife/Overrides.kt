@@ -85,17 +85,17 @@ object Id3 {
     fun enrich(ctx: Context, list: List<Track>): List<Track> {
         val c = loadCache(ctx)
         val pool = Executors.newFixedThreadPool(6)
-        val futures = list.map { t -> pool.submit<Track> { fromTag(c, t) } }
+        val futures = list.map { t -> pool.submit<Track> { fromTag(ctx, c, t) } }
         val out = futures.map { it.get() }
         pool.shutdown()
         saveCache(ctx)
         return out
     }
 
-    private fun fromTag(c: JSONObject, t: Track): Track {
+    private fun fromTag(ctx: Context, c: JSONObject, t: Track): Track {
         if (!t.path.endsWith(".mp3", ignoreCase = true)) return t
         val cached = c.optJSONObject(t.path)
-        val tags = cached ?: readTags(t.url)?.also { c.put(t.path, it) } ?: return t
+        val tags = cached ?: readTags(ctx, t.url, t.path)?.also { c.put(t.path, it) } ?: return t
         fun s(k: String) = tags.optString(k).trim()
         return t.copy(
             title = s("title").ifBlank { t.title },
@@ -105,6 +105,8 @@ object Id3 {
             year = s("year").ifBlank { t.year },
             num = tags.optInt("num", 0).takeIf { it > 0 } ?: t.num,
             disc = tags.optInt("disc", 0).takeIf { it > 0 } ?: t.disc,
+            // обложка из тега (APIC) — только если рядом с треком нет картинки
+            img = if (t.img.isBlank() && tags.has("cover")) tags.optString("cover") else t.img,
         )
     }
 
@@ -129,7 +131,7 @@ object Id3 {
     }
 
     /** null = ошибка сети (не кэшируем); пустой объект = тегов нет. */
-    private fun readTags(url: String): JSONObject? {
+    private fun readTags(ctx: Context, url: String, path: String): JSONObject? {
         return try {
             val head = range(url, 10) ?: return null
             val res = JSONObject()
@@ -137,7 +139,7 @@ object Id3 {
             val ver = head[3].toInt()
             if (ver != 3 && ver != 4) return res
             val tagSize = synch(head, 6)
-            val buf = range(url, minOf(10 + tagSize, 400_000)) ?: return null
+            val buf = range(url, minOf(10 + tagSize, 2_000_000)) ?: return null
             var pos = 10
             while (pos + 10 <= buf.size) {
                 val id = String(buf, pos, 4, Charsets.ISO_8859_1)
@@ -153,6 +155,7 @@ object Id3 {
                     "TRCK" -> res.put("num", text(data).substringBefore('/').toIntOrNull() ?: 0)
                     "TPOS" -> res.put("disc", text(data).substringBefore('/').toIntOrNull() ?: 0)
                     "TYER", "TDRC" -> if (!res.has("year")) res.put("year", text(data).take(4))
+                "APIC" -> saveCover(ctx, path, data)?.let { res.put("cover", it) }
                 }
                 pos += 10 + fsize
             }
@@ -160,6 +163,32 @@ object Id3 {
         } catch (e: Exception) {
             null
         }
+    }
+
+    /** Картинка из APIC: сохраняем файлом и отдаём file:-адрес. */
+    private fun saveCover(ctx: Context, path: String, d: ByteArray): String? {
+        if (d.size < 4) return null
+        val enc = d[0].toInt()
+        var i = 1
+        val mimeEnd = (i until d.size).firstOrNull { d[it].toInt() == 0 } ?: return null
+        val mime = String(d, i, mimeEnd - i, Charsets.ISO_8859_1).lowercase()
+        i = mimeEnd + 2 // после нуля и типа картинки
+        if (i > d.size) return null
+        // описание заканчивается нулём (для UTF-16 — двумя)
+        val wide = enc == 1 || enc == 2
+        var j = i
+        while (j < d.size) {
+            if (d[j].toInt() == 0 && (!wide || (j + 1 < d.size && d[j + 1].toInt() == 0))) break
+            j += if (wide) 2 else 1
+        }
+        val start = j + (if (wide) 2 else 1)
+        if (start >= d.size) return null
+        val img = d.copyOfRange(start, d.size)
+        val ext = if (mime.contains("png")) "png" else "jpg"
+        val dir = File(ctx.filesDir, "covers").apply { mkdirs() }
+        val f = File(dir, path.hashCode().toUInt().toString(16) + "." + ext)
+        if (!f.exists() || f.length() != img.size.toLong()) f.writeBytes(img)
+        return f.toURI().toURL().toString()
     }
 
     private fun synch(b: ByteArray, o: Int): Int =
