@@ -41,6 +41,10 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.runtime.LaunchedEffect
 
 /**
  * Палитра: по умолчанию AMOLED-чёрный. Если на сайте выбран другой фон, цвета пересчитываются
@@ -185,8 +189,21 @@ fun rememberPlayerState(c: MediaController?): PlayerUi {
 @Composable
 fun LikeButton(mediaId: String?) {
     val liked = Favorites.has(mediaId)
+    val pop = remember { Animatable(1f) }
+    val wasLiked = remember { mutableStateOf(liked) }
+    LaunchedEffect(liked) {
+        if (liked && !wasLiked.value) {
+            pop.animateTo(1.35f, tween(120))
+            pop.animateTo(1f, spring(dampingRatio = 0.35f, stiffness = 400f))
+        }
+        wasLiked.value = liked
+    }
     IconButton(onClick = { mediaId?.let { Favorites.toggle(it) } }, enabled = mediaId != null) {
-        Icon(if (liked) Icons.Default.Favorite else Icons.Default.FavoriteBorder, "Лайк", tint = if (liked) Acc else Mut)
+        Icon(
+            if (liked) Icons.Default.Favorite else Icons.Default.FavoriteBorder, "Лайк",
+            tint = if (liked) Acc else Mut,
+            modifier = Modifier.graphicsLayer { scaleX = pop.value; scaleY = pop.value },
+        )
     }
 }
 

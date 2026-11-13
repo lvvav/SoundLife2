@@ -107,6 +107,13 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.ui.graphics.graphicsLayer
 
 // ───────────────────────── данные ─────────────────────────
 
@@ -859,11 +866,20 @@ private fun TrackRowInner(t: Track, playing: Boolean, onClick: () -> Unit) {
     ) {
         Box(contentAlignment = Alignment.Center) {
             Cover(t.album.ifBlank { t.artist }, 48.dp, img = t.img)
-            if (playing) Icon(Icons.Filled.GraphicEq, null, tint = Acc, modifier = Modifier.size(24.dp))
+            if (playing) {
+                val eq = rememberInfiniteTransition(label = "eq")
+                val eqScale by eq.animateFloat(
+                    initialValue = 0.85f, targetValue = 1.15f,
+                    animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "eqs",
+                )
+                Icon(Icons.Filled.GraphicEq, null, tint = Acc,
+                    modifier = Modifier.size(24.dp).graphicsLayer { scaleX = eqScale; scaleY = eqScale })
+            }
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(t.title, color = if (playing) Acc else TextC, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 15.sp)
+            val titleColor by animateColorAsState(if (playing) Acc else TextC, label = "titleColor")
+            Text(t.title, color = titleColor, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 15.sp)
             Text(t.artist, color = Mut, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 13.sp)
         }
         if (t.preview) {
