@@ -11,8 +11,8 @@ android {
         applicationId = "app.soundlife.v2"
         minSdk = 26
         targetSdk = 35
-        versionCode = 52
-        versionName = "2.46.3"
+        versionCode = 53
+        versionName = "2.47.0"
         // Откуда брать музыку (как на сайте: user/repo, папка music)
         // Несколько хранилищ через запятую: "user/repo1,user/repo2". В каждом — папка music.
         buildConfigField("String", "GH_REPOS", "\"lvvav/wavelab\"")
@@ -23,6 +23,14 @@ android {
         // Ключ Last.fm API (тот же, что в index.html сайта). Пусто = функция выключена
         buildConfigField("String", "LASTFM_KEY", "\"db2ee2727d2baf6e7571de2fc6236e49\"")
         buildConfigField("String", "SUPA_KEY", "\"sb_publishable_EJD_GXiloGMd6DDMt87G8Q_PxYmI8eF\"")
+    }
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("soundlife.jks")
+            storePassword = "soundlife-2026"
+            keyAlias = "soundlife"
+            keyPassword = "soundlife-2026"
+        }
     }
     buildTypes {
         release {

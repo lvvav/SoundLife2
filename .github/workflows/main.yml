@@ -24,12 +24,21 @@ jobs:
         with:
           name: SoundLife2-APK
           path: app/build/outputs/apk/debug/app-debug.apk
+      - name: Version info for in-app update
+        if: github.ref_name == 'upload/step25'
+        run: |
+          VC=$(grep -oP 'versionCode = \K\d+' app/build.gradle.kts | head -1)
+          VN=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts | head -1)
+          printf '{"versionCode": %s, "versionName": "%s"}\n' "$VC" "$VN" > version.json
+          cat version.json
       - name: Publish release APK
         if: github.ref_name == 'upload/step25'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-latest
           name: Последняя сборка (debug APK)
-          files: app/build/outputs/apk/debug/app-debug.apk
+          files: |
+            app/build/outputs/apk/debug/app-debug.apk
+            version.json
           overwrite_files: true
           prerelease: true

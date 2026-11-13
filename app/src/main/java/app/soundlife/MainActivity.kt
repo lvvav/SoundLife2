@@ -32,7 +32,7 @@ class MainActivity : ComponentActivity() {
         handleLogin(intent)
         val ask = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
         if (Build.VERSION.SDK_INT >= 33) ask.launch(Manifest.permission.POST_NOTIFICATIONS)
-        setContent { SoundLifeTheme { Box(Modifier.fillMaxSize()) { SoundLifeApp(rememberController()); CallOverlay() } } }
+        setContent { SoundLifeTheme { Box(Modifier.fillMaxSize()) { SoundLifeApp(rememberController()); CallOverlay(); UpdateHost() } } }
     }
 
     /** Фоновое соединение для входящих звонков: только когда вошли в аккаунт. */

@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import kotlinx.coroutines.launch
 
 /** Настройки в том же порядке, что и на сайте: главный список и подэкраны. */
 @Composable
@@ -81,13 +82,18 @@ internal fun SettingsHub(onClose: () -> Unit) {
 
 @Composable
 private fun HubMain(onAccount: () -> Unit, onPage: (String) -> Unit, onUpdates: () -> Unit, onInfo: () -> Unit) {
-    val notifState = if (Notifier.canPost(LocalContext.current)) "включены" else "выключены"
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val notifState = if (Notifier.canPost(ctx)) "включены" else "выключены"
     val rows = listOf(
         HubItem("Аккаунт", if (Auth.signedIn) (Auth.account.ifEmpty { "Вход выполнен" }) else "Вход, ник, аватарка", Icons.Filled.Person, onAccount),
         HubItem("Внешний вид", "Цвет акцента, анимации", Icons.Filled.Palette) { onPage("look") },
         HubItem("Воспроизведение", if (Settings.mix) "Смешивать с другими приложениями" else "Обычное", Icons.Filled.PlayArrow) { onPage("play") },
         HubItem("Уведомления", "Сообщения и звонки: $notifState", Icons.Filled.Notifications) { onPage("notif") },
         HubItem("Обновления", "Что нового в приложении", Icons.Filled.Refresh, onUpdates),
+        HubItem("Проверить обновление", "Скачать и установить без выхода из приложения", Icons.Filled.Refresh) {
+            scope.launch { checkForUpdateNow(ctx) }
+        },
         HubItem("О приложении", "Версия, сборка", Icons.Filled.Info, onInfo),
         HubItem("Сброс настроек", "Вернуть всё по умолчанию", Icons.Filled.Refresh) { onPage("reset") },
     )
