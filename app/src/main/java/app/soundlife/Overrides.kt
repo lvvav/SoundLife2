@@ -108,19 +108,23 @@ object Id3 {
         )
     }
 
-    private fun range(url: String, n: Int): ByteArray? = http.newCall(
-        Request.Builder().url(url).header("Range", "bytes=0-${n - 1}").build(),
-    ).execute().use { r ->
-        if (!r.isSuccessful) return null
-        r.body!!.byteStream().use { input ->
-            val out = java.io.ByteArrayOutputStream()
-            val buf = ByteArray(8192)
-            while (out.size() < n) {
-                val k = input.read(buf, 0, minOf(buf.size, n - out.size()))
-                if (k <= 0) break
-                out.write(buf, 0, k)
+    private fun range(url: String, n: Int): ByteArray? {
+        val req = Request.Builder().url(url).header("Range", "bytes=0-${n - 1}").build()
+        return http.newCall(req).execute().use { r ->
+            if (!r.isSuccessful) {
+                null
+            } else {
+                r.body!!.byteStream().use { input ->
+                    val out = java.io.ByteArrayOutputStream()
+                    val buf = ByteArray(8192)
+                    while (out.size() < n) {
+                        val k = input.read(buf, 0, minOf(buf.size, n - out.size()))
+                        if (k <= 0) break
+                        out.write(buf, 0, k)
+                    }
+                    out.toByteArray()
+                }
             }
-            out.toByteArray()
         }
     }
 
