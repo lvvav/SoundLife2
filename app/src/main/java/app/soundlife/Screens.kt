@@ -1068,10 +1068,10 @@ private fun AlbumGrid(list: List<AlbumInfo>, onOpen: (AlbumInfo) -> Unit) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 pair.forEach { a ->
                     Column(Modifier.weight(1f).clickable { onOpen(a) }) {
-                        Cover(a.name, 170.dp, square = true, img = a.img)
-                        Spacer(Modifier.height(6.dp))
-                        Text(a.name, color = TextC, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 14.sp)
-                        Text(a.artist, color = Mut, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 12.sp)
+                        Box(Modifier.clip(RoundedCornerShape(12.dp))) { Cover(a.name, 170.dp, square = true, img = a.img) }
+                        Spacer(Modifier.height(8.dp))
+                        Text(a.name, color = TextC, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                        Text("Альбом · ${a.artist}", color = Mut, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 13.sp)
                     }
                 }
                 if (pair.size == 1) Spacer(Modifier.weight(1f))
