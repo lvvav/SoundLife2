@@ -76,6 +76,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.content.Context
 import android.content.Intent
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -777,7 +778,7 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            itemsIndexed(listOf("Всё", "Плейлисты", "Альбомы", "Артисты")) { i, label ->
+            itemsIndexed(listOf("Всё", "Плейлисты", "Альбомы", "Исполнители")) { i, label ->
                 FilterChip(
                     selected = filter == i, onClick = { filter = i }, label = { Text(label, fontSize = 15.sp, fontWeight = FontWeight.SemiBold) },
                     colors = FilterChipDefaults.filterChipColors(
@@ -1048,6 +1049,9 @@ private fun DetailScreen(d: Detail, cat: Catalog, ps: PlayerUi, c: MediaControll
                     IconButton(onClick = { c?.playTracks(info.tracks, Random.nextInt(info.tracks.size.coerceAtLeast(1)), true) }) {
                         Icon(Icons.Filled.Shuffle, "Перемешать", tint = Mut)
                     }
+                    IconButton(onClick = {
+                        dctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, info.title), "Поделиться"))
+                    }) { Icon(Icons.Filled.Share, "Поделиться", tint = Mut) }
                     Box(
                         Modifier.size(60.dp).clip(CircleShape).background(Acc).clickable { c?.playTracks(info.tracks, 0, false) },
                         contentAlignment = Alignment.Center,
