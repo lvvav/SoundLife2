@@ -62,6 +62,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 
 /** Экран плеера в стиле Spotify: большая обложка, под ней название, ползунок и кнопки. */
 @Composable
@@ -118,10 +122,16 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
             Spacer(Modifier.height(24.dp))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text(
-                        ps.title.ifBlank { "Ничего не играет" }, color = TextC, fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    )
+                    AnimatedContent(
+                        targetState = ps.title.ifBlank { "Ничего не играет" },
+                        transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(150)) },
+                        label = "playerTitle",
+                    ) { tt ->
+                        Text(
+                            tt, color = TextC, fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                     Text(ps.artist, color = Mut, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     lfm?.let { i ->
                         Text("Слушателей в мире: ${Lastfm.fmt(i.listeners)}", color = Mut, fontSize = 12.sp, maxLines = 1)

@@ -236,7 +236,10 @@ fun SoundLifeApp(controller: MediaController?) {
                         NavigationBarItem(
                             selected = sel,
                             onClick = { tabIx = t.ordinal; detail = null },
-                            icon = { Icon(if (sel) t.on else t.off, t.label) },
+                            icon = {
+                                val iconScale by animateFloatAsState(if (sel) 1.12f else 1f, label = "navIcon")
+                                Icon(if (sel) t.on else t.off, t.label, modifier = Modifier.graphicsLayer { scaleX = iconScale; scaleY = iconScale })
+                            },
                             label = { Text(t.label, fontSize = 11.sp) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = Acc, selectedTextColor = Acc,
@@ -254,7 +257,7 @@ fun SoundLifeApp(controller: MediaController?) {
                 .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)),
         ) {
             when (val s = state) {
-                LibState.Loading -> CircularProgressIndicator(Modifier.align(Alignment.Center), color = Acc)
+                LibState.Loading -> SkeletonList()
                 is LibState.Error -> Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("Не удалось загрузить: ${s.msg}", color = Mut)
                     Spacer(Modifier.height(8.dp))
