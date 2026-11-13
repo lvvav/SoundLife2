@@ -224,6 +224,8 @@ fun SoundLifeApp(controller: MediaController?) {
     var detail by remember { mutableStateOf<Detail?>(null) }
     var showFull by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
+    var showStatsApp by remember { mutableStateOf(false) }
+    var showRecentApp by remember { mutableStateOf(false) }
     val readyTracks = (state as? LibState.Ready)?.tracks
     LaunchedEffect(readyTracks) { Jam.setTracks(readyTracks.orEmpty()) }
     LaunchedEffect(controller) { Jam.attach(controller) }
@@ -271,8 +273,11 @@ fun SoundLifeApp(controller: MediaController?) {
                 Spacer(Modifier.height(8.dp))
                 listOf(
                     Triple("Профиль", Icons.Filled.Person, { Auth.userId()?.let { detail = Detail.User(it, Profile.nick) } }),
+                    Triple("Статистика", Icons.Filled.BarChart, { showStatsApp = true }),
+                    Triple("Недавние", Icons.Filled.History, { showRecentApp = true }),
                     Triple("Сообщения", Icons.AutoMirrored.Filled.Send, { detail = Detail.Inbox }),
                     Triple("Любимые треки", Icons.Filled.Favorite, { detail = Detail.Liked }),
+                    Triple("Обновления", Icons.Filled.Refresh, { showSettings = true }),
                     Triple("Настройки", Icons.Filled.Settings, { showSettings = true }),
                 ).forEach { (label, icon, act) ->
                     Row(
@@ -367,6 +372,8 @@ fun SoundLifeApp(controller: MediaController?) {
     }
     if (showFull && controller != null) FullPlayer(ps, controller) { showFull = false }
     if (showSettings) SettingsHub { showSettings = false }
+    if (showStatsApp) StatsDialog { showStatsApp = false }
+    if (showRecentApp) RecentDialog(readyTracks.orEmpty(), controller) { showRecentApp = false }
     AddToPlaylistDialog()
 }
 
