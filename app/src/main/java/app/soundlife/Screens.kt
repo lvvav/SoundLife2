@@ -134,6 +134,8 @@ import androidx.compose.ui.draw.paint
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.material.icons.filled.GridView
+import androidx.compose.foundation.layout.height
 
 // ───────────────────────── данные ─────────────────────────
 
@@ -644,6 +646,7 @@ private fun SearchScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen
 @Composable
 private fun LibraryScreen(cat: Catalog, onOpen: (Detail) -> Unit, onSettings: () -> Unit) {
     var filter by rememberSaveable { mutableIntStateOf(0) } // 0 всё, 1 плейлисты, 2 альбомы, 3 артисты
+    var grid by rememberSaveable { mutableStateOf(false) }
     var showNew by remember { mutableStateOf(false) }
     var newName by remember { mutableStateOf("") }
     var findNick by remember { mutableStateOf(false) }
@@ -671,6 +674,7 @@ private fun LibraryScreen(cat: Catalog, onOpen: (Detail) -> Unit, onSettings: ()
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 12.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("Медиатека", color = TextC, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            IconButton(onClick = { grid = !grid }) { Icon(if (grid) Icons.AutoMirrored.Filled.List else Icons.Filled.GridView, "Вид", tint = Mut) }
             IconButton(onClick = onSettings) { Icon(Icons.Filled.Settings, "Настройки", tint = Mut) }
         }
         LazyRow(
@@ -733,7 +737,8 @@ private fun LibraryScreen(cat: Catalog, onOpen: (Detail) -> Unit, onSettings: ()
             if (showAl) items(Subs.ym.filter { it.kind == "album" }, key = { "yalb:" + it.id }) { s ->
                 LibRow(s.title, "Альбом · ${s.sub}", s.title, img = s.img) { onOpen(Detail.YmAlbumPage(s.id, s.title, s.sub, s.img)) }
             }
-            if (showAl) items(myAlbums, key = { "b:" + it.name }) { a ->
+            if (showAl && grid) item { AlbumGrid(myAlbums) { onOpen(Detail.Album(it.name)) } }
+            if (showAl && !grid) items(myAlbums, key = { "b:" + it.name }) { a ->
                 LibRow(a.name, "Альбом · ${a.artist}", a.name, img = a.img) { onOpen(Detail.Album(a.name)) }
             }
             if (showAr) items(Subs.ym.filter { it.kind == "artist" }, key = { "yar:" + it.id }) { s ->
@@ -980,6 +985,25 @@ internal fun Cover(seed: String, size: Dp, round: Boolean = false, icon: ImageVe
 }
 
 @Composable
+@Composable
+private fun AlbumGrid(list: List<AlbumInfo>, onOpen: (AlbumInfo) -> Unit) {
+    Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        list.chunked(2).forEach { pair ->
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                pair.forEach { a ->
+                    Column(Modifier.weight(1f).clickable { onOpen(a) }) {
+                        Cover(a.name, 170.dp, square = true, img = a.img)
+                        Spacer(Modifier.height(6.dp))
+                        Text(a.name, color = TextC, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 14.sp)
+                        Text(a.artist, color = Mut, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 12.sp)
+                    }
+                }
+                if (pair.size == 1) Spacer(Modifier.weight(1f))
+            }
+        }
+    }
+}
+
 @Composable
 private fun GradTile(title: String, sub: String, colors: List<Color>, icon: ImageVector, modifier: Modifier, onClick: () -> Unit) {
     Box(
