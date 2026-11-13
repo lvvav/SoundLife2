@@ -59,6 +59,9 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.animation.core.animateFloatAsState
 
 /** Экран плеера в стиле Spotify: большая обложка, под ней название, ползунок и кнопки. */
 @Composable
@@ -153,9 +156,13 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
                 IconButton(onClick = { c.seekToPrevious() }) {
                     Icon(Icons.Filled.SkipPrevious, "Назад", tint = TextC, modifier = Modifier.size(40.dp))
                 }
+                val pressSrc = remember { MutableInteractionSource() }
+                val pressed by pressSrc.collectIsPressedAsState()
+                val pressScale by animateFloatAsState(if (pressed) 0.88f else 1f, label = "press")
                 Box(
-                    Modifier.size(72.dp).clip(CircleShape).background(Acc)
-                        .clickable { if (c.isPlaying) c.pause() else c.play() },
+                    Modifier.size(72.dp).graphicsLayer { scaleX = pressScale; scaleY = pressScale }
+                        .clip(CircleShape).background(Acc)
+                        .clickable(interactionSource = pressSrc, indication = null) { if (c.isPlaying) c.pause() else c.play() },
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
