@@ -209,8 +209,8 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
             }
             if (upcoming.isNotEmpty()) {
                 Spacer(Modifier.height(10.dp))
-                Text("Далее", color = Mut, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                upcoming.forEach { Text(it, color = TextC, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                Text("Далее", color = Mut, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
+                upcoming.forEach { Text(it, color = TextC, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start) }
             }
             Spacer(Modifier.height(12.dp))
             var drag by remember { mutableStateOf<Float?>(null) }

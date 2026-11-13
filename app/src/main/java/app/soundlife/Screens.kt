@@ -328,7 +328,7 @@ fun SoundLifeApp(controller: MediaController?) {
                         } else if (d is Detail.YmAlbumPage || d is Detail.YmArtistPage) {
                             YmDetailScreen(d, ps, controller, onBack = { detail = null }, onOpen = { detail = it })
                         } else {
-                            DetailScreen(d, cat, ps, controller, onBack = { detail = null })
+                            DetailScreen(d, cat, ps, controller, onBack = { detail = null }, onOpen = { detail = it })
                         }
                     } else when (NavTab.entries[tabIx]) {
                         NavTab.Home -> HomeScreen(cat, ps, controller, onOpen = { detail = it }, onSettings = { showSettings = true }, onMenu = { drawerScope.launch { drawer.open() } })
@@ -861,7 +861,7 @@ private class Info(
 )
 
 @Composable
-private fun DetailScreen(d: Detail, cat: Catalog, ps: PlayerUi, c: MediaController?, onBack: () -> Unit) {
+private fun DetailScreen(d: Detail, cat: Catalog, ps: PlayerUi, c: MediaController?, onBack: () -> Unit, onOpen: (Detail) -> Unit = {}) {
     val favs = Favorites.ids
     val dctx = LocalContext.current
     val dscope = rememberCoroutineScope()
@@ -948,7 +948,7 @@ private fun DetailScreen(d: Detail, cat: Catalog, ps: PlayerUi, c: MediaControll
             item { SectionTitle("Альбомы") }
             item {
                 LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(artistAlbums, key = { it.name }) { a -> AlbumCard(a) { /* переход на альбом — через вкладку Медиатека */ } }
+                    items(artistAlbums, key = { it.name }) { a -> AlbumCard(a) { onOpen(Detail.Album(a.name)) } }
                 }
             }
         }
