@@ -131,6 +131,9 @@ import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.ui.draw.paint
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.runtime.mutableIntStateOf
 
 // ───────────────────────── данные ─────────────────────────
 
@@ -374,12 +377,38 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
     if (showRecent) RecentDialog(cat.tracks, c) { showRecent = false }
     if (showStats) StatsDialog { showStats = false }
     var showAllTracks by remember { mutableStateOf(false) }
+    var homeTab by rememberSaveable { mutableIntStateOf(0) }
     LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
         item {
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 12.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(hello, color = TextC, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                 IconButton(onClick = onMenu) { Icon(Icons.Filled.Menu, "Меню", tint = Mut) }
                 IconButton(onClick = onSettings) { Icon(Icons.Filled.Settings, "Настройки", tint = Mut) }
+            }
+        }
+        item {
+            LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                itemsIndexed(listOf("Все", "Артисты", "Альбомы", "Треки")) { i, label ->
+                    FilterChip(
+                        selected = homeTab == i, onClick = { homeTab = i }, label = { Text(label) },
+                        colors = FilterChipDefaults.filterChipColors(containerColor = Hover, labelColor = TextC, selectedContainerColor = Acc, selectedLabelColor = OnAcc),
+                        border = null,
+                    )
+                }
+            }
+        }
+        if (homeTab == 0) item {
+            val hrs = remember { String.format(java.util.Locale.US, "%.1f", Stats.totalHours()) }
+            Box(
+                Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth().clip(ShapeCard)
+                    .background(Brush.linearGradient(listOf(Color(0xFF7B2FF7), Color(0xFFF107A3))))
+                    .clickable { showStats = true }.padding(16.dp),
+            ) {
+                Column {
+                    Text("ИТОГИ", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
+                    Text("Вы слушали $hrs ч", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    Text("Нажмите, чтобы открыть статистику", color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
+                }
             }
         }
         item {
@@ -422,7 +451,7 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
                 TextButton(onClick = { showRecent = true }) { Text("Недавние", color = Acc) }
             }
         }
-        if (artists.isNotEmpty()) {
+        if (artists.isNotEmpty() && (homeTab == 0 || homeTab == 1)) {
             item { SectionTitle("Артисты") }
             item {
                 LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -430,7 +459,7 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
                 }
             }
         }
-        if (albums.isNotEmpty()) {
+        if (albums.isNotEmpty() && (homeTab == 0 || homeTab == 2)) {
             item { SectionTitle("Альбомы") }
             item {
                 LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -438,15 +467,15 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
                 }
             }
         }
-        item { SectionTitle("Все треки") }
-        item {
+        if (homeTab == 0 || homeTab == 3) item { SectionTitle("Все треки") }
+        if (homeTab == 0 || homeTab == 3) item {
             Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 8.dp), horizontalArrangement = Arrangement.End) {
                 TextButton(onClick = { showAllTracks = !showAllTracks }) {
                     Text(if (showAllTracks) "Свернуть" else "Показать все · ${cat.tracks.size}", color = Acc)
                 }
             }
         }
-        itemsIndexed(if (showAllTracks) cat.tracks else cat.tracks.take(20), key = { _, t -> t.path }) { i, t ->
+        if (homeTab == 0 || homeTab == 3) itemsIndexed(if (showAllTracks) cat.tracks else cat.tracks.take(20), key = { _, t -> t.path }) { i, t ->
             TrackRow(t, playing = ps.mediaId == t.path) { c?.playTracks(cat.tracks, i) }
         }
     }
@@ -1050,6 +1079,7 @@ private fun UserScreen(d: Detail.User, onBack: () -> Unit, onOpen: (Detail) -> U
                 AvatarCircle(person?.avatar.orEmpty(), 96.dp)
                 Spacer(Modifier.height(12.dp))
                 Text(nick?.let { "@$it" } ?: "Пользователь", color = TextC, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                if (!loading) Text("${lists.size} плейлистов · ${lists.sumOf { it.tracks.size }} треков", color = Mut, fontSize = 13.sp)
                 Spacer(Modifier.height(10.dp))
                 if (me) {
                     Text("Это вы", color = Mut, fontSize = 14.sp)
