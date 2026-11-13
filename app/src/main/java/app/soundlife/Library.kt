@@ -115,21 +115,29 @@ object Library {
     internal fun rawUrl(rp: String, p: String): String =
         "https://raw.githubusercontent.com/$rp/${BuildConfig.GH_BRANCH}/" + p.split('/').joinToString("/") { Uri.encode(it) }
 
+    /** Разбор имени как на сайте (fromPath): «Артист - Название», номера «01. » и «02 - » убираем. */
     private fun toTrack(p: String, rp: String, imgs: Map<String, String>, folder: String): Track {
         val parts = p.removePrefix("$folder/").split('/')
-        val file = parts.last().substringBeforeLast('.').replace('_', ' ').trim()
+        val name = parts.last().substringBeforeLast('.').replace('_', ' ').trim()
         val folderName = if (parts.size > 1) parts[parts.size - 2] else ""
         val url = rawUrl(rp, p)
         val img = coverFor(p, imgs)
 
-        RULES.firstOrNull { it.test.containsMatchIn(file) }?.let { r ->
-            return Track(p, file.replace(NUM, ""), r.artist, r.album, url, img)
+        RULES.firstOrNull { it.test.containsMatchIn(name) }?.let { r ->
+            return Track(p, unnum(name), r.artist, r.album, url, img)
         }
-        val name = file.replace(NUM, "")
-        val dash = name.indexOf(" - ")
-        val artist = if (dash > 0) name.substring(0, dash).trim() else folderName.ifBlank { "Неизвестный артист" }
-        val title = if (dash > 0) name.substring(dash + 3).trim() else name
+        val sp = name.split(" - ").toMutableList()
+        var artist = if (sp.size > 1) sp.removeAt(0).trim() else folderName.ifBlank { "Неизвестный артист" }
+        val title = unnum(sp.joinToString(" - ").trim().ifBlank { name })
+        if (sp.size > 1 || artist != folderName) artist = unnum(artist)
         return Track(p, title, artist, folderName, url, img)
+    }
+
+    private val UNNUM1 = Regex("^(\\d{1,3})\\s*[.)]\\s*(.+)$")
+    private val UNNUM2 = Regex("^(\\d{1,3})\\s+-\\s+(.+)$")
+    private fun unnum(x: String): String {
+        val m = UNNUM1.find(x) ?: UNNUM2.find(x) ?: return x
+        return m.groupValues[2].trim()
     }
 
     /** Картинка с тем же именем, либо cover / folder / artwork в той же папке. */

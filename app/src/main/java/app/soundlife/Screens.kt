@@ -244,6 +244,7 @@ fun SoundLifeApp(controller: MediaController?) {
     val drawerScope = rememberCoroutineScope()
     ModalNavigationDrawer(
         drawerState = drawer,
+        gesturesEnabled = false,
         drawerContent = {
             ModalDrawerSheet(drawerContainerColor = Panel) {
                 Column(Modifier.padding(horizontal = 24.dp, vertical = 20.dp)) {
