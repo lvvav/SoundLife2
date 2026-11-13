@@ -95,7 +95,7 @@ object Library {
             .groupBy { dupKey(it) }
             .values
             .map { group -> group.firstOrNull { it.path.endsWith(".flac", ignoreCase = true) } ?: group.first() }
-            .sortedWith(compareBy({ it.artist.lowercase() }, { it.album.lowercase() }, { it.title.lowercase() }))
+            .sortedWith(compareBy({ it.artist.lowercase() }, { it.album.lowercase() }, { if (it.disc > 0) it.disc else Int.MAX_VALUE }, { if (it.num > 0) it.num else Int.MAX_VALUE }, { it.title.lowercase() }))
     }
 
     /** Список файлов дерева; при сбое сети берётся сохранённая копия. */

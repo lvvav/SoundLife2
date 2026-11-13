@@ -977,7 +977,7 @@ internal fun Cover(seed: String, size: Dp, round: Boolean = false, icon: ImageVe
     val hue = remember(seed) { ((seed.hashCode().toLong() and 0x7fffffffL) % 360L).toFloat() }
     val shape = when {
         round -> CircleShape
-        square -> RoundedCornerShape(0.dp)
+        square -> RoundedCornerShape(16.dp)
         else -> RoundedCornerShape(if (size > 80.dp) 10.dp else 6.dp)
     }
     val brush = Brush.linearGradient(listOf(Color.hsv(hue, 0.55f, 0.55f), Color.hsv((hue + 40f) % 360f, 0.6f, 0.22f)))
