@@ -331,7 +331,7 @@ fun SoundLifeApp(controller: MediaController?) {
                             DetailScreen(d, cat, ps, controller, onBack = { detail = null })
                         }
                     } else when (NavTab.entries[tabIx]) {
-                        NavTab.Home -> HomeScreen(cat, ps, controller, onOpen = { detail = it }, onSettings = { showSettings = true }, onMenu = { drawerScope.launch { drawer.open() } })
+                        NavTab.Home -> SiteScreen()
                         NavTab.Search -> SearchScreen(cat, ps, controller, onOpen = { detail = it })
                         NavTab.Library -> LibraryScreen(cat, controller, onOpen = { detail = it }, onSettings = { showSettings = true })
                     }
