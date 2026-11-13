@@ -76,6 +76,9 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.content.Context
 import android.content.Intent
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -274,8 +277,8 @@ fun SoundLifeApp(controller: MediaController?) {
                 Spacer(Modifier.height(8.dp))
                 listOf(
                     Triple("Профиль", Icons.Filled.Person, { Auth.userId()?.let { detail = Detail.User(it, Profile.nick) } }),
-                    Triple("Статистика", Icons.Filled.BarChart, { showStatsApp = true }),
-                    Triple("Недавние", Icons.Filled.History, { showRecentApp = true }),
+                    Triple("Статистика", Icons.Filled.Info, { showStatsApp = true }),
+                    Triple("Недавние", Icons.Filled.Star, { showRecentApp = true }),
                     Triple("Сообщения", Icons.AutoMirrored.Filled.Send, { detail = Detail.Inbox }),
                     Triple("Любимые треки", Icons.Filled.Favorite, { detail = Detail.Liked }),
                     Triple("Обновления", Icons.Filled.Refresh, { showSettings = true }),
