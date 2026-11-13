@@ -40,10 +40,10 @@ import androidx.compose.material3.lightColorScheme
  * так же, как applyTheme на сайте (светлый или тёмный фон, текст контрастный).
  */
 object Palette {
-    var bg by mutableStateOf(Color(0xFF000000)); private set
-    var panel by mutableStateOf(Color(0xFF0E0E10)); private set
-    var hover by mutableStateOf(Color(0xFF18181B)); private set
-    var line by mutableStateOf(Color(0xFF26262B)); private set
+    var bg by mutableStateOf(Color(0xFF0D0D11)); private set
+    var panel by mutableStateOf(Color(0xFF121217)); private set
+    var hover by mutableStateOf(Color(0xFF18181F)); private set
+    var line by mutableStateOf(Color(0xFF23232C)); private set
     var text by mutableStateOf(Color(0xFFECECF1)); private set
     var mut by mutableStateOf(Color(0xFF8B8B99)); private set
     var dark by mutableStateOf(true); private set
