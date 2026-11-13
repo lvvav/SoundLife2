@@ -580,7 +580,34 @@ private fun SearchScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen
             modifier = Modifier.fillMaxWidth().padding(16.dp, 10.dp),
         )
         if (query.isEmpty()) {
-            Text("Ищите по названию трека, артисту или альбому", color = Mut, modifier = Modifier.padding(horizontal = 16.dp))
+            Text("Жанры", color = TextC, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            val genres = listOf(
+                "Рок" to listOf(Color(0xFFE53935), Color(0xFF6A1B9A)),
+                "Электроника" to listOf(Color(0xFF00BCD4), Color(0xFF3949AB)),
+                "Хип-хоп" to listOf(Color(0xFFFF9800), Color(0xFFD84315)),
+                "Поп" to listOf(Color(0xFFEC407A), Color(0xFF8E24AA)),
+                "Джаз" to listOf(Color(0xFF8D6E63), Color(0xFF3E2723)),
+                "Классика" to listOf(Color(0xFF26A69A), Color(0xFF004D40)),
+                "Инди" to listOf(Color(0xFF7CB342), Color(0xFF33691E)),
+                "Альтернатива" to listOf(Color(0xFF5C6BC0), Color(0xFF1A237E)),
+            )
+            Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                genres.chunked(2).forEach { row ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        row.forEach { (name, colors) ->
+                            Box(
+                                Modifier.weight(1f).height(96.dp).clip(ShapeCard)
+                                    .background(Brush.linearGradient(colors))
+                                    .clickable { q = name }
+                                    .padding(12.dp),
+                            ) {
+                                Text(name, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(24.dp))
             return@Column
         }
         val ar = remember(cat, query) { cat.artists.filter { it.first.lowercase().contains(query) } }
