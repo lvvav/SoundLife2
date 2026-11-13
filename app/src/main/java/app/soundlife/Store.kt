@@ -178,7 +178,7 @@ object Settings {
     /** Пункт «Админ-панель» в настройках для разработчиков. */
     var adminOn by mutableStateOf(false)
         private set
-    fun setAdminOn(v: Boolean) { adminOn = v; sp.edit().putBoolean("f_admin", v).apply() }
+    fun setAdminPanel(v: Boolean) { adminOn = v; sp.edit().putBoolean("f_admin", v).apply() }
     /** Анимации появления экранов и элементов (как на сайте, «без анимаций»). */
     var anim by mutableStateOf(true)
         private set

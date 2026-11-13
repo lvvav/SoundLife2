@@ -190,7 +190,7 @@ private fun ResetPage() {
 @Composable
 private fun DevPage(onOpenAdmin: () -> Unit) {
     Column {
-        ToggleRow("Админ-панель", "Правка названий, артистов, альбомов и обложек альбомов. Вход по почте или нику, паролю и секретному слову", Settings.adminOn) { Settings.setAdminOn(it) }
+        ToggleRow("Админ-панель", "Правка названий, артистов, альбомов и обложек альбомов. Вход по почте или нику, паролю и секретному слову", Settings.adminOn) { Settings.setAdminPanel(it) }
         if (Settings.adminOn) {
             Button(
                 onClick = onOpenAdmin,
