@@ -431,13 +431,23 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
             }
         }
         item {
-            Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth().clip(ShapeCard).background(Panel).padding(16.dp)) {
-                Text("ДЛЯ ВАС", color = Mut, fontSize = 12.sp)
-                Text("Моя волна", color = TextC, fontSize = 26.sp, fontWeight = FontWeight.Bold)
-                Text("Перемешанные треки из вашей библиотеки", color = Mut, fontSize = 14.sp)
-                Spacer(Modifier.height(12.dp))
-                TextButton(onClick = { c?.playTracks(cat.tracks, Random.nextInt(cat.tracks.size.coerceAtLeast(1)), true) }) {
-                    Text("Слушать", color = Acc, fontWeight = FontWeight.Bold)
+            Row(
+                Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth().clip(RoundedCornerShape(28.dp))
+                    .background(Brush.linearGradient(listOf(Color(0xFF7B2FF7), Color(0xFFF107A3))))
+                    .padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("ДЛЯ ВАС", color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp, letterSpacing = 1.sp)
+                    Text("Моя волна", color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.ExtraBold)
+                    Text("Перемешанные треки из вашей библиотеки", color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp)
+                }
+                Box(
+                    Modifier.size(64.dp).clip(CircleShape).background(Color.White)
+                        .clickable { c?.playTracks(cat.tracks, Random.nextInt(cat.tracks.size.coerceAtLeast(1)), true) },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Filled.PlayArrow, "Слушать", tint = Color(0xFF7B2FF7), modifier = Modifier.size(34.dp))
                 }
             }
         }
@@ -456,9 +466,10 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
             }
         }
         item {
-            Row(Modifier.padding(horizontal = 8.dp)) {
-                TextButton(onClick = { showRecent = true }) { Text("Недавние", color = Acc) }
-            }
+            Text(
+                "Недавние  ›", color = TextC, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.4).sp,
+                modifier = Modifier.clickable { showRecent = true }.padding(start = 16.dp, top = 28.dp, end = 16.dp, bottom = 12.dp),
+            )
         }
         if (artists.isNotEmpty() && (homeTab == 0 || homeTab == 1)) {
             item { SectionTitle("Артисты") }
@@ -506,7 +517,7 @@ private fun QuickTile(q: Quick, modifier: Modifier) {
 
 @Composable
 private fun SectionTitle(text: String) {
-    Text(text, color = TextC, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 16.dp, top = 24.dp, end = 16.dp, bottom = 10.dp))
+    Text(text, color = TextC, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.4).sp, modifier = Modifier.padding(start = 16.dp, top = 28.dp, end = 16.dp, bottom = 12.dp))
 }
 
 @Composable
@@ -709,7 +720,7 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
 
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 12.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Медиатека", color = TextC, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            Text("Медиатека", color = TextC, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.6).sp, modifier = Modifier.weight(1f))
             IconButton(onClick = { grid = !grid }) { Icon(if (grid) Icons.AutoMirrored.Filled.List else Icons.Filled.GridView, "Вид", tint = Mut) }
             IconButton(onClick = onSettings) { Icon(Icons.Filled.Settings, "Настройки", tint = Mut) }
         }
