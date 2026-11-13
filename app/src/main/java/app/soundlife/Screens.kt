@@ -956,22 +956,32 @@ private fun DetailScreen(d: Detail, cat: Catalog, ps: PlayerUi, c: MediaControll
 
     LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
         item {
-            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                Modifier.fillMaxWidth()
+                    .background(Brush.verticalGradient(listOf(Acc.copy(alpha = 0.45f), Bg)))
+                    .padding(horizontal = 16.dp),
+                horizontalAlignment = Alignment.Start,
+            ) {
                 Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад", tint = TextC) }
                 }
-                Cover(info.seed, 180.dp, info.round, info.icon, img = info.tracks.firstOrNull { it.img.isNotBlank() }?.img.orEmpty())
-                Spacer(Modifier.height(16.dp))
-                Text(info.title, color = TextC, fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(info.sub, color = Mut, fontSize = 13.sp, textAlign = TextAlign.Center)
-                Spacer(Modifier.height(12.dp))
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Box(Modifier.size(230.dp).clip(RoundedCornerShape(10.dp))) {
+                        Cover(info.seed, 230.dp, info.round, info.icon, img = info.tracks.firstOrNull { it.img.isNotBlank() }?.img.orEmpty())
+                    }
+                }
+                Spacer(Modifier.height(18.dp))
+                Text(info.title, color = TextC, fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.6).sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Spacer(Modifier.height(4.dp))
+                Text(info.sub, color = Mut, fontSize = 14.sp)
+                Spacer(Modifier.height(14.dp))
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     if (info.followed != null) {
                         OutlinedButton(
-                            onClick = info.onFollow,
+                            onClick = info.onFollow, shape = RoundedCornerShape(50),
                             border = BorderStroke(1.dp, if (info.followed) Acc else Line),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = if (info.followed) Acc else TextC),
-                        ) { Text(if (info.followed) "Вы подписаны" else "Подписаться") }
+                        ) { Text(if (info.followed) "Вы подписаны" else "Подписаться", fontWeight = FontWeight.SemiBold) }
                     }
                     if (d is Detail.Playlist) {
                         val pub = PubPlaylists.isPublic(d.name)
@@ -989,10 +999,11 @@ private fun DetailScreen(d: Detail, cat: Catalog, ps: PlayerUi, c: MediaControll
                         Icon(Icons.Filled.Shuffle, "Перемешать", tint = Mut)
                     }
                     Box(
-                        Modifier.size(52.dp).clip(CircleShape).background(Acc).clickable { c?.playTracks(info.tracks, 0, false) },
+                        Modifier.size(60.dp).clip(CircleShape).background(Acc).clickable { c?.playTracks(info.tracks, 0, false) },
                         contentAlignment = Alignment.Center,
-                    ) { Icon(Icons.Filled.PlayArrow, "Играть", tint = OnAcc, modifier = Modifier.size(30.dp)) }
+                    ) { Icon(Icons.Filled.PlayArrow, "Играть", tint = OnAcc, modifier = Modifier.size(34.dp)) }
                 }
+                Spacer(Modifier.height(10.dp))
             }
         }
         if (artistAlbums.isNotEmpty()) {

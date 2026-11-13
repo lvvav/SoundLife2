@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.AddCircleOutline
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
@@ -169,8 +171,9 @@ internal fun MiniPlayer(ps: PlayerUi, c: MediaController, onOpen: () -> Unit) {
                 }
                 Text(ps.artist, color = Mut, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 12.sp)
             }
-            LikeButton(ps.mediaId)
-            IconButton(onClick = { c.seekToPrevious() }) { Icon(Icons.Default.SkipPrevious, "Назад", tint = TextC) }
+            IconButton(onClick = { ps.mediaId?.let { Favorites.toggle(it) } }) {
+                Icon(if (Favorites.has(ps.mediaId)) Icons.Filled.CheckCircle else Icons.Filled.AddCircleOutline, "В любимое", tint = if (Favorites.has(ps.mediaId)) Acc else TextC)
+            }
             IconButton(onClick = { if (c.isPlaying) c.pause() else c.play() }) {
                 AnimatedContent(targetState = ps.isPlaying, transitionSpec = { (fadeIn(tween(180)) + scaleIn(initialScale = 0.7f)) togetherWith (fadeOut(tween(120)) + scaleOut(targetScale = 0.7f)) }, label = "miniPlay") { playing ->
                     Icon(if (playing) Icons.Default.Pause else Icons.Default.PlayArrow, "Пауза/играть", tint = Acc)
