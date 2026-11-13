@@ -1083,11 +1083,11 @@ private fun AlbumGrid(list: List<AlbumInfo>, onOpen: (AlbumInfo) -> Unit) {
 @Composable
 private fun GradTile(title: String, sub: String, colors: List<Color>, icon: ImageVector, modifier: Modifier, onClick: () -> Unit) {
     Box(
-        modifier.height(96.dp).clip(ShapeCard).background(Brush.linearGradient(colors)).clickable(onClick = onClick).padding(12.dp),
+        modifier.height(112.dp).clip(RoundedCornerShape(20.dp)).background(Brush.linearGradient(colors)).clickable(onClick = onClick).padding(14.dp),
     ) {
         Icon(icon, null, tint = Color.White.copy(alpha = 0.9f), modifier = Modifier.size(22.dp).align(Alignment.TopStart))
         Column(Modifier.align(Alignment.BottomStart)) {
-            Text(title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(title, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(sub, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
         }
     }
@@ -1100,13 +1100,15 @@ private fun LibRow(title: String, sub: String, seed: String, round: Boolean = fa
 @Composable
 private fun LibRowInner(title: String, sub: String, seed: String, round: Boolean = false, icon: ImageVector? = null, img: String = "", onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 8.dp),
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Cover(seed, 52.dp, round, icon, img = img)
-        Spacer(Modifier.width(12.dp))
+        Box(Modifier.clip(if (round) CircleShape else RoundedCornerShape(14.dp))) {
+            Cover(seed, 62.dp, round, icon, square = !round, img = img)
+        }
+        Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
-            Text(title, color = TextC, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 15.sp)
+            Text(title, color = TextC, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             Text(sub, color = Mut, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 13.sp)
         }
     }
