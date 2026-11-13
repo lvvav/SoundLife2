@@ -493,10 +493,16 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
             }
         }
         item {
-            Text(
-                "Недавние  ›", color = TextC, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.4).sp,
-                modifier = Modifier.clickable { showRecent = true }.padding(start = 16.dp, top = 28.dp, end = 16.dp, bottom = 12.dp),
-            )
+            val recentTop = remember(cat) { Stats.recentKeys(3).mapNotNull { k -> cat.tracks.firstOrNull { it.path == k } } }
+            Column(Modifier.fillMaxWidth()) {
+                Text(
+                    "Недавно прослушанные  ›", color = TextC, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.4).sp,
+                    modifier = Modifier.clickable { showRecent = true }.padding(start = 16.dp, top = 28.dp, end = 16.dp, bottom = 12.dp),
+                )
+                recentTop.forEachIndexed { i, tr ->
+                    TrackRow(tr, playing = ps.mediaId == tr.path) { c?.playTracks(recentTop, i) }
+                }
+            }
         }
         if (artists.isNotEmpty() && (homeTab == 0 || homeTab == 1)) {
             item { SectionTitle("Артисты") }
@@ -1044,7 +1050,7 @@ private fun DetailScreen(d: Detail, cat: Catalog, ps: PlayerUi, c: MediaControll
             }
         }
         if (artistAlbums.isNotEmpty()) {
-            item { SectionTitle("Альбомы") }
+            item { SectionTitle("Популярные релизы") }
             item {
                 LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(artistAlbums, key = { it.name }) { a -> AlbumCard(a) { onOpen(Detail.Album(a.name)) } }

@@ -74,6 +74,7 @@ import androidx.compose.animation.fadeOut
 @Composable
 internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
     var showLy by remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
     // (загружено, результат): грузим при смене трека
     val lyrs by produceState<Pair<Boolean, Lyrics.Result?>>(false to null, ps.mediaId) {
         value = false to null
@@ -89,6 +90,23 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
     }
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         val pctx = LocalContext.current
+        if (showMenu) Dialog(onDismissRequest = { showMenu = false }) {
+            val items: List<Pair<String, () -> Unit>> = listOf(
+                "Поделиться" to {
+                    pctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, "${ps.artist} — ${ps.title}"), "Поделиться"))
+                },
+                (if (Favorites.has(ps.mediaId)) "Убрать из любимого" else "Добавить в любимое") to { ps.mediaId?.let { Favorites.toggle(it) } },
+                "Добавить в плейлист" to { Playlists.pendingTrack = ps.mediaId },
+            )
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Panel).padding(vertical = 8.dp)) {
+                items.forEach { (label, act) ->
+                    Text(
+                        label, color = TextC, fontSize = 17.sp,
+                        modifier = Modifier.fillMaxWidth().clickable { showMenu = false; act() }.padding(horizontal = 22.dp, vertical = 16.dp),
+                    )
+                }
+            }
+        }
         val album = c.mediaMetadata.albumTitle?.toString().orEmpty()
         var speed by remember { mutableStateOf(1f) }
         var sleepMin by remember { mutableStateOf(0) }
@@ -117,7 +135,7 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
                     Text("ИЗ АЛЬБОМА", color = Mut, fontSize = 11.sp, fontWeight = FontWeight.Medium)
                     Text(album.ifBlank { "Сейчас играет" }, color = TextC, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                IconButton(onClick = { ps.mediaId?.let { Playlists.pendingTrack = it } }, enabled = ps.mediaId != null) {
+                IconButton(onClick = { showMenu = true }, enabled = ps.mediaId != null) {
                     Icon(Icons.Filled.MoreVert, "Меню трека", tint = TextC)
                 }
             }
