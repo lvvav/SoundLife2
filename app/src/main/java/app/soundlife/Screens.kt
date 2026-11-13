@@ -119,6 +119,9 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.animation.core.animateFloatAsState
 
 // ───────────────────────── данные ─────────────────────────
 
@@ -1323,8 +1326,12 @@ private fun ThreadScreen(
                 value = text, onValueChange = { text = it }, maxLines = 4,
                 placeholder = { Text("Сообщение", color = Mut) }, modifier = Modifier.weight(1f), colors = fieldColors,
             )
+            val sendSrc = remember { MutableInteractionSource() }
+            val sendPressed by sendSrc.collectIsPressedAsState()
+            val sendScale by animateFloatAsState(if (sendPressed) 0.85f else 1f, label = "send")
             IconButton(
                 enabled = text.isNotBlank(),
+                interactionSource = sendSrc,
                 onClick = {
                     val t = text.trim()
                     text = ""
@@ -1334,7 +1341,13 @@ private fun ThreadScreen(
                             .onFailure { error = "Не отправлено"; text = t }
                     }
                 },
-            ) { Icon(Icons.AutoMirrored.Filled.Send, "Отправить", tint = if (text.isNotBlank()) Acc else Mut) }
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.Send, "Отправить",
+                    tint = if (text.isNotBlank()) Acc else Mut,
+                    modifier = Modifier.graphicsLayer { scaleX = sendScale; scaleY = sendScale },
+                )
+            }
         }
     }
 }

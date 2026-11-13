@@ -223,3 +223,6 @@ fun Appear(content: @Composable () -> Unit) {
         enter = fadeIn(tween(260)) + slideInVertically(tween(260)) { it / 6 },
     ) { content() }
 }
+
+/** Цвет ошибок и отказа, как на сайте (--danger). */
+val Danger = Color(0xFFFF6B6B)

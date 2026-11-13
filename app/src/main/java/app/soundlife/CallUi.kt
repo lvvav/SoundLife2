@@ -50,7 +50,7 @@ fun CallOverlay() {
             key(Calls.room) { VdoView(Calls.room, Calls.pw, Calls.video) }
             Button(
                 onClick = { Calls.hang() },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE5484D)),
+                colors = ButtonDefaults.buttonColors(containerColor = Danger),
                 modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 40.dp),
             ) { Text("Завершить") }
         } else {
@@ -67,7 +67,7 @@ fun CallOverlay() {
                     Row(horizontalArrangement = Arrangement.spacedBy(48.dp)) {
                         Button(
                             onClick = { Calls.decline() },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE5484D)),
+                            colors = ButtonDefaults.buttonColors(containerColor = Danger),
                         ) { Text("Отклонить") }
                         Button(
                             onClick = { Calls.answer() },
@@ -77,7 +77,7 @@ fun CallOverlay() {
                 } else {
                     Button(
                         onClick = { Calls.hang() },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE5484D)),
+                        colors = ButtonDefaults.buttonColors(containerColor = Danger),
                     ) { Text("Отменить") }
                 }
             }
