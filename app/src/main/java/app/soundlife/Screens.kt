@@ -333,6 +333,7 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
         }
     }
 
+    var showAllTracks by remember { mutableStateOf(false) }
     LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
         item {
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 12.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -367,7 +368,14 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
             }
         }
         item { SectionTitle("Все треки") }
-        itemsIndexed(cat.tracks, key = { _, t -> t.path }) { i, t ->
+        item {
+            Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 8.dp), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = { showAllTracks = !showAllTracks }) {
+                    Text(if (showAllTracks) "Свернуть" else "Показать все · ${cat.tracks.size}", color = Acc)
+                }
+            }
+        }
+        itemsIndexed(if (showAllTracks) cat.tracks else cat.tracks.take(20), key = { _, t -> t.path }) { i, t ->
             TrackRow(t, playing = ps.mediaId == t.path) { c?.playTracks(cat.tracks, i) }
         }
     }
