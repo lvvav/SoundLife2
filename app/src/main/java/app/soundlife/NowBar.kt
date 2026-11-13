@@ -35,7 +35,7 @@ object NowBar {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         val b = Notification.Builder(ctx, CHANNEL)
-            .setSmallIcon(android.R.drawable.ic_media_play)
+            .setSmallIcon(R.drawable.ic_now_bar)
             .setContentTitle(title)
             .setContentText(artist)
             .setContentIntent(open)
