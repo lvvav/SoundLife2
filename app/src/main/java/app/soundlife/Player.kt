@@ -126,7 +126,7 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
                 Spacer(Modifier.height(12.dp))
                 if (showLy) {
                     Box(Modifier.fillMaxWidth().height(420.dp).clip(ShapeCard).background(Panel).padding(16.dp)) {
-                        LyricsView(lyrs, ps.position, Modifier.fillMaxSize())
+                        LyricsView(lyrs, ps.position, Modifier.fillMaxSize(), onSeek = { c.seekTo(it) })
                     }
                     TextButton(onClick = { showLy = false }) { Text("Обложка", color = Acc) }
                 } else {
@@ -260,7 +260,7 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
                     Column(Modifier.fillMaxWidth().clip(ShapeCard).background(Panel).padding(16.dp)) {
                         Text("Текст", color = TextC, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         Spacer(Modifier.height(8.dp))
-                        LyricsView(lyrs, ps.position, Modifier.fillMaxWidth().height(120.dp))
+                        LyricsView(lyrs, ps.position, Modifier.fillMaxWidth().height(120.dp), onSeek = { c.seekTo(it) })
                         TextButton(onClick = { showLy = true }) { Text("Показать текст", color = Acc) }
                     }
                 }
@@ -320,7 +320,7 @@ internal fun AvatarCircle(data: String, size: Dp) {
 
 /** Текст песни: с таймкодами подсвечивается текущая строка; без них — обычный текст. */
 @Composable
-private fun LyricsView(state: Pair<Boolean, Lyrics.Result?>, pos: Long, modifier: Modifier) {
+private fun LyricsView(state: Pair<Boolean, Lyrics.Result?>, pos: Long, modifier: Modifier, onSeek: (Long) -> Unit = {}) {
     val (loaded, r) = state
     Box(modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         when {
@@ -337,7 +337,7 @@ private fun LyricsView(state: Pair<Boolean, Lyrics.Result?>, pos: Long, modifier
                             line.second.ifBlank { "♪" }, textAlign = TextAlign.Center, fontSize = 20.sp,
                             fontWeight = if (i == cur) FontWeight.Bold else FontWeight.Normal,
                             color = if (i == cur) TextC else Mut,
-                            modifier = Modifier.padding(vertical = 6.dp),
+                            modifier = Modifier.clickable { onSeek(line.first) }.padding(vertical = 6.dp),
                         )
                     }
                 }
