@@ -11,8 +11,8 @@ android {
         applicationId = "app.soundlife.v2"
         minSdk = 26
         targetSdk = 35
-        versionCode = 78
-        versionName = "2.49.17"
+        versionCode = 79
+        versionName = "2.49.18"
         // Откуда брать музыку (как на сайте: user/repo, папка music)
         // Несколько хранилищ через запятую: "user/repo1,user/repo2". В каждом — папка music.
         buildConfigField("String", "GH_REPOS", "\"lvvav/wavelab\"")

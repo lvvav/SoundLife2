@@ -522,10 +522,12 @@ private fun SectionTitle(text: String) {
 
 @Composable
 private fun ArtistCard(name: String, img: String, onClick: () -> Unit) {
-    Column(Modifier.width(104.dp).clip(ShapeSmall).clickable(onClick = onClick), horizontalAlignment = Alignment.CenterHorizontally) {
-        Cover(name, 104.dp, round = true, img = img)
-        Spacer(Modifier.height(6.dp))
-        Text(name, color = TextC, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+    Column(Modifier.width(116.dp).clip(ShapeSmall).clickable(onClick = onClick), horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(Modifier.clip(CircleShape).background(Brush.linearGradient(listOf(Acc, Color.Transparent)))) {
+            Cover(name, 116.dp, round = true, img = img)
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(name, color = TextC, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
     }
 }
 
@@ -576,7 +578,7 @@ private fun SearchScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen
     }
 
     Column(Modifier.fillMaxSize()) {
-        Text("Поиск", color = TextC, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 16.dp, top = 12.dp))
+        Text("Поиск", color = TextC, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.6).sp, modifier = Modifier.padding(start = 16.dp, top = 12.dp))
         OutlinedTextField(
             value = q, onValueChange = { q = it }, singleLine = true,
             placeholder = { Text("Треки, артисты, альбомы", color = Mut) },
@@ -730,7 +732,7 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
         ) {
             itemsIndexed(listOf("Всё", "Плейлисты", "Альбомы", "Артисты")) { i, label ->
                 FilterChip(
-                    selected = filter == i, onClick = { filter = i }, label = { Text(label) },
+                    selected = filter == i, onClick = { filter = i }, label = { Text(label, fontSize = 15.sp, fontWeight = FontWeight.SemiBold) },
                     colors = FilterChipDefaults.filterChipColors(
                         containerColor = Hover, labelColor = TextC,
                         selectedContainerColor = Acc, selectedLabelColor = OnAcc,
