@@ -297,6 +297,14 @@ internal fun SettingsDialog(onClose: () -> Unit) {
                     TextButton(onClick = { pickAva.launch("image/*") }) { Text("Аватарка", color = Acc) }
                 }
                 if (pfMsg.isNotEmpty()) Text(pfMsg, color = Mut, fontSize = 12.sp)
+                var showUpd by remember { mutableStateOf(false) }
+                var showInfo by remember { mutableStateOf(false) }
+                Row {
+                    TextButton(onClick = { showUpd = true }) { Text("Обновления", color = Acc) }
+                    TextButton(onClick = { showInfo = true }) { Text("Информация", color = Acc) }
+                }
+                if (showUpd) UpdatesDialog { showUpd = false }
+                if (showInfo) InfoDialog { showInfo = false }
                 var showJoin by remember { mutableStateOf(false) }
                 var joinCode by remember { mutableStateOf("") }
                 if (Auth.signedIn) {

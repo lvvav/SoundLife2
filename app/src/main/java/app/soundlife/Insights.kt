@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.LocalContext
 
 /** Экран «Итоги»: время за период, сравнение с предыдущим, график по дням. Как на сайте. */
 @Composable
@@ -44,6 +46,8 @@ fun StatsDialog(onClose: () -> Unit) {
     val avgMin = minutes / period.coerceAtLeast(1)
     val delta = if (prevTotal > 0) ((total - prevTotal) / prevTotal * 100).toInt() else null
     val periods = listOf(1 to "1 день", 7 to "7 дней", 31 to "31 день", 365 to "365 дней")
+    var showAch by remember { mutableStateOf(false) }
+    val ctx = LocalContext.current
 
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Column(Modifier.fillMaxSize().background(Bg).verticalScroll(rememberScrollState()).padding(16.dp)) {
@@ -106,6 +110,12 @@ fun StatsDialog(onClose: () -> Unit) {
                     }
                 }
             }
+            Spacer(Modifier.height(16.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = { showAch = true }) { Text("Достижения", color = Acc) }
+                TextButton(onClick = { shareStats(ctx, minutes, period) }) { Text("Поделиться", color = Acc) }
+            }
+            if (showAch) AchievementsDialog { showAch = false }
             Spacer(Modifier.height(24.dp))
         }
     }

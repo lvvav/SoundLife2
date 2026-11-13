@@ -178,7 +178,7 @@ internal fun Track.toItem() = MediaItem.Builder()
             .setArtworkUri(if (img.isNotBlank()) Uri.parse(img) else null).build()
     ).build()
 
-private fun MediaController.playTracks(list: List<Track>, index: Int, shuffle: Boolean? = null) {
+internal fun MediaController.playTracks(list: List<Track>, index: Int, shuffle: Boolean? = null) {
     if (list.isEmpty()) return
     if (shuffle != null) shuffleModeEnabled = shuffle
     setMediaItems(list.map { it.toItem() }, index.coerceIn(0, list.size - 1), 0L)
@@ -334,6 +334,8 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
     }
 
     var showStats by remember { mutableStateOf(false) }
+    var showRecent by remember { mutableStateOf(false) }
+    if (showRecent) RecentDialog(cat.tracks, c) { showRecent = false }
     if (showStats) StatsDialog { showStats = false }
     var showAllTracks by remember { mutableStateOf(false) }
     LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
@@ -376,6 +378,11 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
                     Text("$week мин", color = TextC, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                     Text("Нажмите, чтобы увидеть итоги", color = Mut, fontSize = 13.sp)
                 }
+            }
+        }
+        item {
+            Row(Modifier.padding(horizontal = 8.dp)) {
+                TextButton(onClick = { showRecent = true }) { Text("Недавние", color = Acc) }
             }
         }
         if (artists.isNotEmpty()) {
