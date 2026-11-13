@@ -125,7 +125,6 @@ private fun HubMain(onAccount: () -> Unit, onPage: (String) -> Unit, onUpdates: 
 
 private class HubItem(val title: String, val sub: String, val icon: androidx.compose.ui.graphics.vector.ImageVector, val onClick: () -> Unit)
 
-@Composable
 private val THEME_PRESETS: List<Triple<String, Long, Long>> = listOf(
     Triple("Тёмная", 0xFF0D0D11L, 0xFFC6FF3DL),
     Triple("OLED", 0xFF000000L, 0xFF1ED760L),
