@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -143,6 +144,29 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
                 LikeButton(ps.mediaId)
             }
 
+            // Кнопки как на сайте: скорость и поделиться
+            var speed by remember { mutableStateOf(1f) }
+            val pctx = LocalContext.current
+            Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                    onClick = {
+                        speed = when (speed) { 1f -> 1.25f; 1.25f -> 1.5f; 1.5f -> 2f; else -> 1f }
+                        c.setPlaybackSpeed(speed)
+                    },
+                    shape = ShapeSmall,
+                    border = BorderStroke(1.dp, Line),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TextC),
+                ) { Text(if (speed == 1f) "1×" else "${speed}×", fontSize = 13.sp) }
+                OutlinedButton(
+                    onClick = {
+                        val text = "${ps.artist} — ${ps.title}"
+                        pctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), "Поделиться"))
+                    },
+                    shape = ShapeSmall,
+                    border = BorderStroke(1.dp, Line),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TextC),
+                ) { Text("Поделиться", fontSize = 13.sp) }
+            }
             Spacer(Modifier.height(12.dp))
             var drag by remember { mutableStateOf<Float?>(null) }
             val dur = ps.duration.coerceAtLeast(1L).toFloat()
