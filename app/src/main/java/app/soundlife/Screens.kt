@@ -123,6 +123,13 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.LocalIndication
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Person
 
 // ───────────────────────── данные ─────────────────────────
 
@@ -225,6 +232,33 @@ fun SoundLifeApp(controller: MediaController?) {
     val ps = rememberPlayerState(controller)
     BackHandler(enabled = detail != null) { detail = null }
 
+    val drawer = rememberDrawerState(DrawerValue.Closed)
+    val drawerScope = rememberCoroutineScope()
+    ModalNavigationDrawer(
+        drawerState = drawer,
+        drawerContent = {
+            ModalDrawerSheet(drawerContainerColor = Panel) {
+                Column(Modifier.padding(horizontal = 24.dp, vertical = 20.dp)) {
+                    Text(Profile.nick.ifEmpty { "SoundLife" }, color = TextC, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text(if (Auth.signedIn) "Посмотреть профиль" else "Вы не вошли", color = Mut, fontSize = 13.sp)
+                }
+                listOf(
+                    Triple("Профиль", Icons.Filled.Person, { Auth.userId()?.let { detail = Detail.User(it, Profile.nick) } }),
+                    Triple("Сообщения", Icons.AutoMirrored.Filled.Send, { detail = Detail.Inbox }),
+                    Triple("Любимые треки", Icons.Filled.Favorite, { detail = Detail.Liked }),
+                    Triple("Настройки", Icons.Filled.Settings, { showSettings = true }),
+                ).forEach { (label, icon, act) ->
+                    NavigationDrawerItem(
+                        label = { Text(label) },
+                        icon = { Icon(icon, null) },
+                        selected = false,
+                        onClick = { drawerScope.launch { drawer.close() }; act() },
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                    )
+                }
+            }
+        },
+    ) {
     Scaffold(
         containerColor = Bg,
         contentWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
@@ -288,7 +322,7 @@ fun SoundLifeApp(controller: MediaController?) {
                             DetailScreen(d, cat, ps, controller, onBack = { detail = null })
                         }
                     } else when (NavTab.entries[tabIx]) {
-                        NavTab.Home -> HomeScreen(cat, ps, controller, onOpen = { detail = it }, onSettings = { showSettings = true })
+                        NavTab.Home -> HomeScreen(cat, ps, controller, onOpen = { detail = it }, onSettings = { showSettings = true }, onMenu = { drawerScope.launch { drawer.open() } })
                         NavTab.Search -> SearchScreen(cat, ps, controller, onOpen = { detail = it })
                         NavTab.Library -> LibraryScreen(cat, onOpen = { detail = it }, onSettings = { showSettings = true })
                     }
@@ -296,6 +330,7 @@ fun SoundLifeApp(controller: MediaController?) {
                 }
             }
         }
+    }
     }
     if (showFull && controller != null) FullPlayer(ps, controller) { showFull = false }
     if (showSettings) SettingsDialog { showSettings = false }
@@ -307,7 +342,7 @@ fun SoundLifeApp(controller: MediaController?) {
 private class Quick(val title: String, val seed: String, val icon: ImageVector?, val round: Boolean, val onClick: () -> Unit)
 
 @Composable
-private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: (Detail) -> Unit, onSettings: () -> Unit) {
+private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: (Detail) -> Unit, onSettings: () -> Unit, onMenu: () -> Unit = {}) {
     val subA = Subs.artists
     val subB = Subs.albums
     val hour = remember { java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY) }
@@ -342,6 +377,7 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
         item {
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 12.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(hello, color = TextC, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                IconButton(onClick = onMenu) { Icon(Icons.Filled.Menu, "Меню", tint = Mut) }
                 IconButton(onClick = onSettings) { Icon(Icons.Filled.Settings, "Настройки", tint = Mut) }
             }
         }
