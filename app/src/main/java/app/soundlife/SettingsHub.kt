@@ -127,7 +127,7 @@ private fun LookPage() {
             }
         }
         item { SubHeader("Эффекты") }
-        item { ToggleRow("Анимации", "Плавное появление элементов", Settings.anim) { Settings.setAnim(it) } }
+        item { ToggleRow("Анимации", "Плавное появление элементов", Settings.anim) { Settings.setAnimOn(it) } }
     }
 }
 

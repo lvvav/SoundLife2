@@ -177,7 +177,7 @@ object Settings {
     /** Анимации появления экранов и элементов (как на сайте, «без анимаций»). */
     var anim by mutableStateOf(true)
         private set
-    fun setAnim(v: Boolean) { anim = v; sp.edit().putBoolean("f_anim", v).apply() }
+    fun setAnimOn(v: Boolean) { anim = v; sp.edit().putBoolean("f_anim", v).apply() }
     /** Сброс всех настроек к исходным (как «Сбросить настройки» на сайте). */
     fun resetAll() {
         setAccent(0)
