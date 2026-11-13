@@ -7,6 +7,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 /** Правки из админки сайта: таблица album_edits (Supabase). Ключ трека — путь файла, обложка альбома — «cov:артист|альбом». */
 object Overrides {
@@ -82,20 +83,25 @@ object Id3 {
         try { cacheFile(ctx).writeText(cache.toString()) } catch (_: Exception) {}
     }
 
+    /** Ждём теги не дольше 8 секунд; что не успело — показываем без тегов, дочитывается в фоне и попадёт в кэш. */
     fun enrich(ctx: Context, list: List<Track>): List<Track> {
         val c = loadCache(ctx)
         val pool = Executors.newFixedThreadPool(6)
         val futures = list.map { t -> pool.submit<Track> { fromTag(ctx, c, t) } }
-        val out = futures.map { it.get() }
         pool.shutdown()
-        saveCache(ctx)
+        val deadline = System.currentTimeMillis() + 8_000
+        val out = futures.mapIndexed { i, f ->
+            val left = maxOf(1L, deadline - System.currentTimeMillis())
+            try { f.get(left, TimeUnit.MILLISECONDS) } catch (e: Exception) { list[i] }
+        }
+        Thread { futures.forEach { runCatching { it.get() } }; saveCache(ctx) }.start()
         return out
     }
 
     private fun fromTag(ctx: Context, c: JSONObject, t: Track): Track {
         if (!t.path.endsWith(".mp3", ignoreCase = true)) return t
-        val cached = c.optJSONObject(t.path)
-        val tags = cached ?: readTags(ctx, t.url, t.path)?.also { c.put(t.path, it) } ?: return t
+        val cached = synchronized(lock) { c.optJSONObject(t.path) }
+        val tags = cached ?: readTags(ctx, t.url, t.path)?.also { r -> synchronized(lock) { c.put(t.path, r) } } ?: return t
         fun s(k: String) = tags.optString(k).trim()
         return t.copy(
             title = s("title").ifBlank { t.title },
