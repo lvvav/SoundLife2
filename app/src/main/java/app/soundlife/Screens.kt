@@ -246,24 +246,44 @@ fun SoundLifeApp(controller: MediaController?) {
         drawerState = drawer,
         gesturesEnabled = false,
         drawerContent = {
-            ModalDrawerSheet(drawerContainerColor = Panel) {
-                Column(Modifier.padding(horizontal = 24.dp, vertical = 20.dp)) {
-                    Text(Profile.nick.ifEmpty { "SoundLife" }, color = TextC, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                    Text(if (Auth.signedIn) "Посмотреть профиль" else "Вы не вошли", color = Mut, fontSize = 13.sp)
+            ModalDrawerSheet(drawerContainerColor = Bg) {
+                val nickText = Profile.nick.ifEmpty { "SoundLife" }
+                Row(
+                    Modifier.fillMaxWidth().clickable {
+                        drawerScope.launch { drawer.close() }
+                        Auth.userId()?.let { detail = Detail.User(it, Profile.nick) }
+                    }.padding(horizontal = 20.dp, vertical = 22.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        Modifier.size(56.dp).clip(CircleShape).background(Brush.linearGradient(listOf(Color(0xFF7B2FF7), Color(0xFFF107A3)))),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(nickText.take(1).uppercase(), color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.width(14.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(nickText, color = TextC, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(if (Auth.signedIn) "Посмотреть профиль" else "Вы не вошли", color = Mut, fontSize = 14.sp)
+                    }
                 }
+                HorizontalDivider(color = Line)
+                Spacer(Modifier.height(8.dp))
                 listOf(
                     Triple("Профиль", Icons.Filled.Person, { Auth.userId()?.let { detail = Detail.User(it, Profile.nick) } }),
                     Triple("Сообщения", Icons.AutoMirrored.Filled.Send, { detail = Detail.Inbox }),
                     Triple("Любимые треки", Icons.Filled.Favorite, { detail = Detail.Liked }),
                     Triple("Настройки", Icons.Filled.Settings, { showSettings = true }),
                 ).forEach { (label, icon, act) ->
-                    NavigationDrawerItem(
-                        label = { Text(label) },
-                        icon = { Icon(icon, null) },
-                        selected = false,
-                        onClick = { drawerScope.launch { drawer.close() }; act() },
-                        modifier = Modifier.padding(horizontal = 12.dp),
-                    )
+                    Row(
+                        Modifier.fillMaxWidth().clickable { drawerScope.launch { drawer.close() }; act() }
+                            .padding(horizontal = 24.dp, vertical = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(icon, null, tint = TextC, modifier = Modifier.size(26.dp))
+                        Spacer(Modifier.width(20.dp))
+                        Text(label, color = TextC, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                    }
                 }
             }
         },
