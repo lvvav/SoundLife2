@@ -182,3 +182,9 @@ fun LikeButton(mediaId: String?) {
         Icon(if (liked) Icons.Default.Favorite else Icons.Default.FavoriteBorder, "Лайк", tint = if (liked) Acc else Mut)
     }
 }
+
+
+/** Скругления как на сайте: маленькие элементы 10, карточки 14, кнопки и плашки полностью круглые. */
+val ShapeSmall = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
+val ShapeCard = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
+val ShapePill = androidx.compose.foundation.shape.RoundedCornerShape(99.dp)

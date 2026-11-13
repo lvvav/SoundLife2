@@ -216,7 +216,7 @@ private fun LyricsView(state: Pair<Boolean, Lyrics.Result?>, pos: Long, modifier
 @Composable
 internal fun SettingsDialog(onClose: () -> Unit) {
     Dialog(onDismissRequest = onClose) {
-        Column(Modifier.clip(RoundedCornerShape(16.dp)).background(Panel).padding(20.dp)) {
+        Column(Modifier.clip(ShapeCard).background(Panel).padding(20.dp)) {
             Text("Настройки", color = TextC, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             var em by remember { mutableStateOf("") }
             var pw by remember { mutableStateOf("") }
@@ -426,7 +426,7 @@ internal fun AddToPlaylistDialog() {
     val lists = Playlists.lists
 
     Dialog(onDismissRequest = { Playlists.pendingTrack = null }) {
-        Column(Modifier.clip(RoundedCornerShape(16.dp)).background(Panel).padding(20.dp)) {
+        Column(Modifier.clip(ShapeCard).background(Panel).padding(20.dp)) {
             Text("В плейлист", color = TextC, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             if (lists.isEmpty()) {

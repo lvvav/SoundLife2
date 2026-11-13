@@ -350,7 +350,7 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
 @Composable
 private fun QuickTile(q: Quick, modifier: Modifier) {
     Row(
-        modifier.height(56.dp).clip(RoundedCornerShape(8.dp)).background(Hover).clickable(onClick = q.onClick),
+        modifier.height(56.dp).clip(ShapeSmall).background(Hover).clickable(onClick = q.onClick),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Cover(q.seed, 56.dp, q.round, q.icon, square = true)
@@ -368,7 +368,7 @@ private fun SectionTitle(text: String) {
 
 @Composable
 private fun ArtistCard(name: String, img: String, onClick: () -> Unit) {
-    Column(Modifier.width(104.dp).clip(RoundedCornerShape(8.dp)).clickable(onClick = onClick), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(Modifier.width(104.dp).clip(ShapeSmall).clickable(onClick = onClick), horizontalAlignment = Alignment.CenterHorizontally) {
         Cover(name, 104.dp, round = true, img = img)
         Spacer(Modifier.height(6.dp))
         Text(name, color = TextC, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
@@ -377,7 +377,7 @@ private fun ArtistCard(name: String, img: String, onClick: () -> Unit) {
 
 @Composable
 private fun AlbumCard(a: AlbumInfo, onClick: () -> Unit) {
-    Column(Modifier.width(130.dp).clip(RoundedCornerShape(8.dp)).clickable(onClick = onClick)) {
+    Column(Modifier.width(130.dp).clip(ShapeSmall).clickable(onClick = onClick)) {
         Cover(a.name, 130.dp, img = a.img)
         Spacer(Modifier.height(6.dp))
         Text(a.name, color = TextC, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -424,7 +424,7 @@ private fun SearchScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen
             placeholder = { Text("Треки, артисты, альбомы", color = Mut) },
             leadingIcon = { Icon(Icons.Filled.Search, null, tint = Mut) },
             trailingIcon = { if (q.isNotEmpty()) IconButton(onClick = { q = "" }) { Icon(Icons.Filled.Close, "Очистить", tint = Mut) } },
-            shape = RoundedCornerShape(12.dp),
+            shape = ShapeCard,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = Acc, unfocusedBorderColor = Line,
                 focusedContainerColor = Panel, unfocusedContainerColor = Panel,
@@ -1348,7 +1348,7 @@ private fun ChatBubble(
         horizontalAlignment = if (mine) Alignment.End else Alignment.Start,
     ) {
         Column(
-            Modifier.clip(RoundedCornerShape(16.dp)).background(if (mine) Acc else Hover)
+            Modifier.clip(ShapeCard).background(if (mine) Acc else Hover)
                 .clickable(onClick = onTap).padding(horizontal = 12.dp, vertical = 8.dp),
         ) {
             when {
@@ -1439,7 +1439,7 @@ private fun PhotoBubble(url: String, onOpen: () -> Unit) {
     }
     val b = bmp
     Box(
-        Modifier.size(220.dp).clip(RoundedCornerShape(12.dp)).background(Line).clickable(onClick = onOpen),
+        Modifier.size(220.dp).clip(ShapeCard).background(Line).clickable(onClick = onOpen),
         contentAlignment = Alignment.Center,
     ) {
         if (b != null) Image(b, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
