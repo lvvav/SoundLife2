@@ -1060,9 +1060,24 @@ private fun DetailScreen(d: Detail, cat: Catalog, ps: PlayerUi, c: MediaControll
                 )
             }
         } else {
-            item { SectionTitle("Треки") }
-            itemsIndexed(info.tracks, key = { _, t -> t.path }) { i, t ->
-                TrackRow(t, playing = ps.mediaId == t.path) { c?.playTracks(info.tracks, i) }
+            if (d is Detail.Artist) {
+                // «Популярное»: первые 5 треков с номерами, как у Spotify
+                item { SectionTitle("Популярное") }
+                itemsIndexed(info.tracks.take(5), key = { _, t -> "pop:" + t.path }) { i, t ->
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text("${i + 1}", color = Mut, fontSize = 15.sp, modifier = Modifier.padding(start = 16.dp).width(22.dp))
+                        Box(Modifier.weight(1f)) {
+                            TrackRow(t, playing = ps.mediaId == t.path) { c?.playTracks(info.tracks, i) }
+                        }
+                    }
+                }
+                if (info.tracks.size > 5) item { SectionTitle("Все треки") }
+            } else {
+                item { SectionTitle("Треки") }
+            }
+            itemsIndexed(if (d is Detail.Artist && info.tracks.size > 5) info.tracks.drop(5) else info.tracks, key = { _, t -> t.path }) { i, t ->
+                val idx = if (d is Detail.Artist && info.tracks.size > 5) i + 5 else i
+                TrackRow(t, playing = ps.mediaId == t.path) { c?.playTracks(info.tracks, idx) }
             }
         }
     }
