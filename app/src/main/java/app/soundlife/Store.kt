@@ -182,7 +182,7 @@ object Settings {
     fun resetAll() {
         setAccent(0)
         changeMix(false)
-        setAnim(true)
+        setAnimOn(true)
     }
     fun changeMix(v: Boolean) { mix = v; sp.edit().putBoolean(KEY_MIX, v).apply() }
     fun setAccent(i: Int) {
