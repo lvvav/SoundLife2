@@ -34,6 +34,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import kotlin.math.pow
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 
 /**
  * Палитра: по умолчанию AMOLED-чёрный. Если на сайте выбран другой фон, цвета пересчитываются
@@ -188,3 +195,14 @@ fun LikeButton(mediaId: String?) {
 val ShapeSmall = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
 val ShapeCard = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
 val ShapePill = androidx.compose.foundation.shape.RoundedCornerShape(99.dp)
+
+
+/** Плавное появление содержимого: затухание и подъём на 260 мс, один раз при показе элемента. */
+@Composable
+fun Appear(content: @Composable () -> Unit) {
+    val state = remember { MutableTransitionState(false).apply { targetState = true } }
+    AnimatedVisibility(
+        visibleState = state,
+        enter = fadeIn(tween(260)) + slideInVertically(tween(260)) { it / 6 },
+    ) { content() }
+}

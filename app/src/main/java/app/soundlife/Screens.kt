@@ -827,7 +827,12 @@ internal fun Cover(seed: String, size: Dp, round: Boolean = false, icon: ImageVe
 }
 
 @Composable
-private fun LibRow(title: String, sub: String, seed: String, round: Boolean = false, icon: ImageVector? = null, img: String = "", onClick: () -> Unit) {
+@Composable
+private fun LibRow(title: String, sub: String, seed: String, round: Boolean = false, icon: ImageVector? = null, img: String = "", onClick: () -> Unit) =
+    Appear { LibRowInner(title, sub, seed, round, icon, img, onClick) }
+
+@Composable
+private fun LibRowInner(title: String, sub: String, seed: String, round: Boolean = false, icon: ImageVector? = null, img: String = "", onClick: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -842,7 +847,12 @@ private fun LibRow(title: String, sub: String, seed: String, round: Boolean = fa
 }
 
 @Composable
-private fun TrackRow(t: Track, playing: Boolean, onClick: () -> Unit) {
+@Composable
+private fun TrackRow(t: Track, playing: Boolean, onClick: () -> Unit) =
+    Appear { TrackRowInner(t, playing, onClick) }
+
+@Composable
+private fun TrackRowInner(t: Track, playing: Boolean, onClick: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().clickable(onClick = onClick).padding(start = 16.dp, top = 6.dp, end = 4.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
