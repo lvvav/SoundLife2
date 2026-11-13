@@ -259,7 +259,8 @@ internal fun SettingsDialog(onClose: () -> Unit) {
                 focusedTextColor = TextC, unfocusedTextColor = TextC,
             )
             Spacer(Modifier.height(16.dp))
-            Text("Аккаунт SoundLife", color = Mut, fontSize = 13.sp)
+            Spacer(Modifier.height(12.dp))
+            Text("АККАУНТ", color = Mut, fontSize = 12.sp, fontWeight = FontWeight.Medium)
             Spacer(Modifier.height(8.dp))
             if (Auth.signedIn) {
                 val ctx = LocalContext.current
@@ -299,6 +300,8 @@ internal fun SettingsDialog(onClose: () -> Unit) {
                 if (pfMsg.isNotEmpty()) Text(pfMsg, color = Mut, fontSize = 12.sp)
                 var showUpd by remember { mutableStateOf(false) }
                 var showInfo by remember { mutableStateOf(false) }
+                Spacer(Modifier.height(12.dp))
+                Text("ИНФОРМАЦИЯ", color = Mut, fontSize = 12.sp, fontWeight = FontWeight.Medium)
                 Row {
                     TextButton(onClick = { showUpd = true }) { Text("Обновления", color = Acc) }
                     TextButton(onClick = { showInfo = true }) { Text("Информация", color = Acc) }
@@ -309,7 +312,8 @@ internal fun SettingsDialog(onClose: () -> Unit) {
                 var joinCode by remember { mutableStateOf("") }
                 if (Auth.signedIn) {
                     Spacer(Modifier.height(12.dp))
-                    Text("Слушать вместе", color = TextC, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(12.dp))
+                    Text("СЛУШАТЬ ВМЕСТЕ", color = Mut, fontSize = 12.sp, fontWeight = FontWeight.Medium)
                     if (Jam.code.isEmpty()) {
                         Row {
                             TextButton(onClick = { Jam.create() }) { Text("Создать комнату", color = Acc) }
