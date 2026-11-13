@@ -167,6 +167,51 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = TextC),
                 ) { Text("Поделиться", fontSize = 13.sp) }
             }
+            // Таймер сна, скачивание и «Далее», как на сайте
+            var sleepMin by remember { mutableStateOf(0) }
+            androidx.compose.runtime.LaunchedEffect(sleepMin) {
+                if (sleepMin > 0) {
+                    kotlinx.coroutines.delay(sleepMin * 60_000L)
+                    c.pause()
+                    sleepMin = 0
+                }
+            }
+            Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                    onClick = { sleepMin = when (sleepMin) { 0 -> 15; 15 -> 30; 30 -> 60; else -> 0 } },
+                    shape = ShapeSmall,
+                    border = BorderStroke(1.dp, Line),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TextC),
+                ) { Text(if (sleepMin == 0) "Таймер сна" else "Сон через $sleepMin мин", fontSize = 13.sp) }
+                OutlinedButton(
+                    onClick = {
+                        val id = ps.mediaId
+                        val repo = BuildConfig.GH_REPOS.split(',').map { it.trim() }.firstOrNull { it.isNotEmpty() }
+                        if (id != null && repo != null) {
+                            val req = android.app.DownloadManager.Request(android.net.Uri.parse(Library.rawUrl(repo, id)))
+                                .setTitle(ps.title)
+                                .setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                                .setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_MUSIC, "SoundLife/" + id.substringAfterLast('/'))
+                            (pctx.getSystemService(android.content.Context.DOWNLOAD_SERVICE) as android.app.DownloadManager).enqueue(req)
+                            android.widget.Toast.makeText(pctx, "Скачивание начато", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    shape = ShapeSmall,
+                    border = BorderStroke(1.dp, Line),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TextC),
+                ) { Text("Скачать", fontSize = 13.sp) }
+            }
+            val upcoming = remember(ps.mediaId) {
+                (1..5).mapNotNull { k ->
+                    val i = c.currentMediaItemIndex + k
+                    if (i < c.mediaItemCount) c.getMediaItemAt(i).mediaMetadata.title?.toString() else null
+                }
+            }
+            if (upcoming.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
+                Text("Далее", color = Mut, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                upcoming.forEach { Text(it, color = TextC, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+            }
             Spacer(Modifier.height(12.dp))
             var drag by remember { mutableStateOf<Float?>(null) }
             val dur = ps.duration.coerceAtLeast(1L).toFloat()
