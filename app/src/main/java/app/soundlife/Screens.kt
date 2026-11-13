@@ -1182,30 +1182,57 @@ private fun UserScreen(d: Detail.User, onBack: () -> Unit, onOpen: (Detail) -> U
 
     LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
         item {
-            Row(Modifier.fillMaxWidth().padding(start = 4.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад", tint = TextC) }
-            }
-        }
-        item {
-            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                AvatarCircle(person?.avatar.orEmpty(), 96.dp)
-                Spacer(Modifier.height(12.dp))
-                Text(nick?.let { "@$it" } ?: "Пользователь", color = TextC, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                if (!loading) Text("${lists.size} плейлистов · ${lists.sumOf { it.tracks.size }} треков", color = Mut, fontSize = 13.sp)
-                Spacer(Modifier.height(10.dp))
-                if (me) {
-                    Text("Это вы", color = Mut, fontSize = 14.sp)
-                } else {
-                    OutlinedButton(
-                        onClick = { Follows.toggleUser(d.uid) },
-                        border = BorderStroke(1.dp, if (followed) Acc else Line),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = if (followed) Acc else TextC),
-                    ) { Text(if (followed) "Вы подписаны" else "Подписаться") }
-                    TextButton(onClick = { onOpen(Detail.Thread(d.uid, nick.orEmpty())) }) { Text("Написать", color = Acc) }
+            Box(
+                Modifier.fillMaxWidth().height(190.dp)
+                    .background(Brush.verticalGradient(listOf(Color(0xFF7B2FF7), Color(0xFFF107A3)))),
+            ) {
+                IconButton(onClick = onBack, modifier = Modifier.padding(start = 4.dp, top = 8.dp)) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад", tint = Color.White)
                 }
             }
         }
+        item {
+            Column(Modifier.fillMaxWidth().offset(y = (-56).dp).padding(horizontal = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(Modifier.clip(CircleShape).background(Bg).padding(4.dp)) {
+                    AvatarCircle(person?.avatar.orEmpty(), 104.dp)
+                }
+                Spacer(Modifier.height(10.dp))
+                Text(nick?.let { "@$it" } ?: "Пользователь", color = TextC, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.4).sp)
+                Spacer(Modifier.height(14.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    StatCard("Плейлисты", if (loading) "…" else lists.size.toString(), Modifier.weight(1f))
+                    StatCard("Треки", if (loading) "…" else lists.sumOf { it.tracks.size }.toString(), Modifier.weight(1f))
+                }
+                Spacer(Modifier.height(14.dp))
+                if (me) {
+                    Text("Это вы", color = Mut, fontSize = 14.sp)
+                } else {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        if (followed) {
+                            OutlinedButton(
+                                onClick = { Follows.toggleUser(d.uid) }, modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(50), border = BorderStroke(1.dp, Acc),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Acc),
+                            ) { Text("Вы подписаны", fontWeight = FontWeight.SemiBold) }
+                        } else {
+                            Button(
+                                onClick = { Follows.toggleUser(d.uid) }, modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(50),
+                                colors = ButtonDefaults.buttonColors(containerColor = Acc, contentColor = OnAcc),
+                            ) { Text("Подписаться", fontWeight = FontWeight.SemiBold) }
+                        }
+                        Button(
+                            onClick = { onOpen(Detail.Thread(d.uid, nick.orEmpty())) }, modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(50),
+                            colors = ButtonDefaults.buttonColors(containerColor = Hover, contentColor = TextC),
+                        ) { Text("Написать", fontWeight = FontWeight.SemiBold) }
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+        }
         if (error.isNotEmpty()) item { Text(error, color = Mut, modifier = Modifier.padding(16.dp)) }
+        item { SectionTitle("Плейлисты") }
         if (!loading && error.isEmpty() && lists.isEmpty()) {
             item { Text("Публичных плейлистов пока нет", color = Mut, modifier = Modifier.padding(16.dp)) }
         }
@@ -1214,6 +1241,15 @@ private fun UserScreen(d: Detail.User, onBack: () -> Unit, onOpen: (Detail) -> U
                 onOpen(Detail.PubPl(p.id, p.name, p.tracks))
             }
         }
+    }
+}
+
+
+@Composable
+private fun StatCard(label: String, value: String, modifier: Modifier) {
+    Column(modifier.clip(ShapeCard).background(Panel).padding(14.dp)) {
+        Text(value, color = TextC, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+        Text(label, color = Mut, fontSize = 12.sp)
     }
 }
 
@@ -1364,7 +1400,22 @@ private fun InboxScreen(onBack: () -> Unit, onOpen: (Detail) -> Unit) {
                 val who = p?.nick?.takeIf { it.isNotEmpty() }?.let { "@$it" } ?: "Без ника"
                 val last = d.last?.let { m -> if (m.body.isNotBlank()) m.body else if (m.track.isNotBlank()) "Вложение" else "" } ?: "Нет сообщений"
                 val sub = if (d.unread > 0) "$last · новых: ${d.unread}" else last
-                LibRow(who, sub, "chat:${d.peer}", round = true) { onOpen(Detail.Thread(d.peer, p?.nick.orEmpty())) }
+                Row(
+                    Modifier.fillMaxWidth().clickable { onOpen(Detail.Thread(d.peer, p?.nick.orEmpty())) }.padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    AvatarCircle(p?.avatar.orEmpty(), 56.dp)
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(who, color = TextC, fontSize = 16.sp, fontWeight = if (d.unread > 0) FontWeight.ExtraBold else FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(last, color = if (d.unread > 0) TextC else Mut, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    if (d.unread > 0) {
+                        Box(Modifier.clip(RoundedCornerShape(50)).background(Acc).padding(horizontal = 9.dp, vertical = 3.dp)) {
+                            Text("${d.unread}", color = OnAcc, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
             }
         }
     }
