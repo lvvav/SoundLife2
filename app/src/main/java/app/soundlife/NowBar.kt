@@ -15,10 +15,10 @@ import androidx.media3.common.Player
  * Методы API 36 вызываем через рефлексию, чтобы не поднимать compileSdk.
  */
 object NowBar {
-    private const val CHANNEL = "now_bar"
+    private const val CHANNEL = "now_bar2"
     private const val ID = 9001
 
-    fun update(ctx: Context, p: Player) {
+    fun update(ctx: Context, p: Player, token: android.media.session.MediaSession.Token? = null) {
         val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val item = p.currentMediaItem
         if (item == null || p.playbackState == Player.STATE_IDLE || p.playbackState == Player.STATE_ENDED) {
@@ -26,7 +26,7 @@ object NowBar {
         }
         if (Build.VERSION.SDK_INT < 33) return
         if (nm.getNotificationChannel(CHANNEL) == null) {
-            nm.createNotificationChannel(NotificationChannel(CHANNEL, "Сейчас играет", NotificationManager.IMPORTANCE_LOW))
+            nm.createNotificationChannel(NotificationChannel(CHANNEL, "Сейчас играет", NotificationManager.IMPORTANCE_DEFAULT))
         }
         val title = item.mediaMetadata.title?.toString().orEmpty().ifBlank { "SoundLife" }
         val artist = item.mediaMetadata.artist?.toString().orEmpty()
@@ -42,6 +42,8 @@ object NowBar {
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
+            .setCategory(Notification.CATEGORY_TRANSPORT)
+            .also { b -> token?.let { b.setStyle(Notification.MediaStyle().setMediaSession(it)) } }
         b.extras.putBoolean("android.requestPromotedOngoing", true)
         if (Build.VERSION.SDK_INT >= 36) {
             // Флаги Live Updates (Android 16): коротко показываем в статусной строке

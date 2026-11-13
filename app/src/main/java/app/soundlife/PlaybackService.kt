@@ -106,13 +106,13 @@ class PlaybackService : MediaSessionService() {
         player.addListener(object : Player.Listener {
             override fun onMediaItemTransition(item: MediaItem?, reason: Int) {
                 refresh()
-                NowBar.update(this@PlaybackService, player)
+                NowBar.update(this@PlaybackService, player, session?.platformToken)
                 Stats.leave(reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO)
                 item?.mediaId?.let { Stats.started(it) }
             }
             override fun onShuffleModeEnabledChanged(enabled: Boolean) = refresh()
-            override fun onIsPlayingChanged(isPlaying: Boolean) = NowBar.update(this@PlaybackService, player)
-            override fun onPlaybackStateChanged(state: Int) = NowBar.update(this@PlaybackService, player)
+            override fun onIsPlayingChanged(isPlaying: Boolean) = NowBar.update(this@PlaybackService, player, session?.platformToken)
+            override fun onPlaybackStateChanged(state: Int) = NowBar.update(this@PlaybackService, player, session?.platformToken)
         })
         Favorites.onChange = { refresh() }
         prefs(this).registerOnSharedPreferenceChangeListener(prefListener)
