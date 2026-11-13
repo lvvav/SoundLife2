@@ -53,6 +53,12 @@ import androidx.media3.session.MediaController
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import android.widget.Toast
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.graphicsLayer
 
 /** Экран плеера в стиле Spotify: большая обложка, под ней название, ползунок и кнопки. */
 @Composable
@@ -94,7 +100,15 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
             } else {
                 BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     val side = minOf(maxWidth, 360.dp)
-                    Cover(ps.title.ifBlank { "SoundLife" }, side, square = false, img = ps.artUrl)
+                    val breath = rememberInfiniteTransition(label = "breathe")
+                    val breathScale by breath.animateFloat(
+                        initialValue = 0.97f, targetValue = 1.0f,
+                        animationSpec = infiniteRepeatable(tween(2400), RepeatMode.Reverse), label = "scale",
+                    )
+                    val sc = if (ps.isPlaying) breathScale else 1f
+                    Box(Modifier.graphicsLayer { scaleX = sc; scaleY = sc }) {
+                        Cover(ps.title.ifBlank { "SoundLife" }, side, square = false, img = ps.artUrl)
+                    }
                 }
             }
 
