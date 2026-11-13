@@ -129,35 +129,37 @@ object Id3 {
     }
 
     /** null = ошибка сети (не кэшируем); пустой объект = тегов нет. */
-    private fun readTags(url: String): JSONObject? = try {
-        val head = range(url, 10) ?: return null
-        val res = JSONObject()
-        if (head.size < 10 || String(head, 0, 3, Charsets.ISO_8859_1) != "ID3") return res
-        val ver = head[3].toInt()
-        if (ver != 3 && ver != 4) return res
-        val tagSize = synch(head, 6)
-        val buf = range(url, minOf(10 + tagSize, 400_000)) ?: return null
-        var pos = 10
-        while (pos + 10 <= buf.size) {
-            val id = String(buf, pos, 4, Charsets.ISO_8859_1)
-            if (id[0] !in 'A'..'Z') break
-            val fsize = if (ver == 4) synch(buf, pos + 4) else be32(buf, pos + 4)
-            if (fsize <= 0 || pos + 10 + fsize > buf.size) break
-            val data = buf.copyOfRange(pos + 10, pos + 10 + fsize)
-            when (id) {
-                "TIT2" -> res.put("title", text(data))
-                "TPE1" -> res.put("artist", text(data))
-                "TALB" -> res.put("album", text(data))
-                "TPE2" -> res.put("aa", text(data))
-                "TRCK" -> res.put("num", text(data).substringBefore('/').toIntOrNull() ?: 0)
-                "TPOS" -> res.put("disc", text(data).substringBefore('/').toIntOrNull() ?: 0)
-                "TYER", "TDRC" -> if (!res.has("year")) res.put("year", text(data).take(4))
+    private fun readTags(url: String): JSONObject? {
+        return try {
+            val head = range(url, 10) ?: return null
+            val res = JSONObject()
+            if (head.size < 10 || String(head, 0, 3, Charsets.ISO_8859_1) != "ID3") return res
+            val ver = head[3].toInt()
+            if (ver != 3 && ver != 4) return res
+            val tagSize = synch(head, 6)
+            val buf = range(url, minOf(10 + tagSize, 400_000)) ?: return null
+            var pos = 10
+            while (pos + 10 <= buf.size) {
+                val id = String(buf, pos, 4, Charsets.ISO_8859_1)
+                if (id[0] !in 'A'..'Z') break
+                val fsize = if (ver == 4) synch(buf, pos + 4) else be32(buf, pos + 4)
+                if (fsize <= 0 || pos + 10 + fsize > buf.size) break
+                val data = buf.copyOfRange(pos + 10, pos + 10 + fsize)
+                when (id) {
+                    "TIT2" -> res.put("title", text(data))
+                    "TPE1" -> res.put("artist", text(data))
+                    "TALB" -> res.put("album", text(data))
+                    "TPE2" -> res.put("aa", text(data))
+                    "TRCK" -> res.put("num", text(data).substringBefore('/').toIntOrNull() ?: 0)
+                    "TPOS" -> res.put("disc", text(data).substringBefore('/').toIntOrNull() ?: 0)
+                    "TYER", "TDRC" -> if (!res.has("year")) res.put("year", text(data).take(4))
+                }
+                pos += 10 + fsize
             }
-            pos += 10 + fsize
+            res
+        } catch (e: Exception) {
+            null
         }
-        res
-    } catch (e: Exception) {
-        null
     }
 
     private fun synch(b: ByteArray, o: Int): Int =
