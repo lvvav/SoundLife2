@@ -333,6 +333,8 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
         }
     }
 
+    var showStats by remember { mutableStateOf(false) }
+    if (showStats) StatsDialog { showStats = false }
     var showAllTracks by remember { mutableStateOf(false) }
     LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
         item {
@@ -348,6 +350,31 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
                         pair.forEach { q -> QuickTile(q, Modifier.weight(1f)) }
                         if (pair.size == 1) Spacer(Modifier.weight(1f))
                     }
+                }
+            }
+        }
+        item {
+            Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth().clip(ShapeCard).background(Panel).padding(16.dp)) {
+                Text("ДЛЯ ВАС", color = Mut, fontSize = 12.sp)
+                Text("Моя волна", color = TextC, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+                Text("Перемешанные треки из вашей библиотеки", color = Mut, fontSize = 14.sp)
+                Spacer(Modifier.height(12.dp))
+                TextButton(onClick = { c?.playTracks(cat.tracks, Random.nextInt(cat.tracks.size.coerceAtLeast(1)), true) }) {
+                    Text("Слушать", color = Acc, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        item {
+            val week = remember { (Stats.dailySec(7).sumOf { it.second } / 60).toInt() }
+            Row(
+                Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth().clip(ShapeCard).background(Panel)
+                    .clickable { showStats = true }.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("ТВОЯ МУЗЫКА · 7 ДНЕЙ", color = Mut, fontSize = 12.sp)
+                    Text("$week мин", color = TextC, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                    Text("Нажмите, чтобы увидеть итоги", color = Mut, fontSize = 13.sp)
                 }
             }
         }

@@ -182,6 +182,17 @@ object Stats {
     @Synchronized
     fun histJson(): JSONArray = JSONArray(hist.toList())
 
+    /** Секунды прослушивания по дням за последние days дней, сдвиг offset дней назад. От старых к новым. */
+    fun dailySec(days: Int, offset: Int = 0): List<Pair<String, Double>> {
+        val out = ArrayList<Pair<String, Double>>()
+        for (i in (days - 1 + offset) downTo offset) {
+            val c = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -i) }
+            val k = "%04d-%02d-%02d".format(c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH))
+            out.add(k to (day[k] ?: 0.0))
+        }
+        return out
+    }
+
     private fun todayKey(): String {
         val c = Calendar.getInstance()
         return "%04d-%02d-%02d".format(c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH))
