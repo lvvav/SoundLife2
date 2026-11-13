@@ -114,6 +114,11 @@ import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
 
 // ───────────────────────── данные ─────────────────────────
 
@@ -254,7 +259,13 @@ fun SoundLifeApp(controller: MediaController?) {
                 }
                 is LibState.Ready -> {
                     val cat = remember(s) { Catalog(s.tracks) }
-                    val d = detail
+                    AnimatedContent(
+                        targetState = detail,
+                        transitionSpec = {
+                            (fadeIn(tween(220)) + slideInHorizontally(tween(220)) { it / 10 }) togetherWith fadeOut(tween(160))
+                        },
+                        label = "screen",
+                    ) { d ->
                     if (d != null) {
                         if (d is Detail.Thread) {
                             ThreadScreen(d, onBack = { detail = Detail.Inbox }, tracks = cat.tracks, ps = ps, controller = controller)
@@ -273,6 +284,7 @@ fun SoundLifeApp(controller: MediaController?) {
                         NavTab.Home -> HomeScreen(cat, ps, controller, onOpen = { detail = it }, onSettings = { showSettings = true })
                         NavTab.Search -> SearchScreen(cat, ps, controller, onOpen = { detail = it })
                         NavTab.Library -> LibraryScreen(cat, onOpen = { detail = it }, onSettings = { showSettings = true })
+                    }
                     }
                 }
             }
@@ -1355,7 +1367,14 @@ private fun readMedia(ctx: Context, uri: Uri): Triple<ByteArray, String, String>
 }
 
 @Composable
+@Composable
 private fun ChatBubble(
+    m: Chat.Msg, mine: Boolean, rx: Map<String, String>, selected: Boolean,
+    onTap: () -> Unit, onReact: (String) -> Unit, tracks: List<Track>, controller: MediaController?,
+) = Appear { ChatBubbleInner(m, mine, rx, selected, onTap, onReact, tracks, controller) }
+
+@Composable
+private fun ChatBubbleInner(
     m: Chat.Msg, mine: Boolean, rx: Map<String, String>, selected: Boolean,
     onTap: () -> Unit, onReact: (String) -> Unit, tracks: List<Track>, controller: MediaController?,
 ) {
