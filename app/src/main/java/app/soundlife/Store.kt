@@ -172,6 +172,17 @@ object Settings {
         accentCustom = p.getLong("accent_custom", -1L).takeIf { it != -1L }
         siteT = p.getLong("site_set_t", 0L)
         Palette.set(p.getLong("site_bg", 0xFF000000L))
+        anim = p.getBoolean("f_anim", true)
+    }
+    /** Анимации появления экранов и элементов (как на сайте, «без анимаций»). */
+    var anim by mutableStateOf(true)
+        private set
+    fun setAnim(v: Boolean) { anim = v; sp.edit().putBoolean("f_anim", v).apply() }
+    /** Сброс всех настроек к исходным (как «Сбросить настройки» на сайте). */
+    fun resetAll() {
+        setAccent(0)
+        changeMix(false)
+        setAnim(true)
     }
     fun changeMix(v: Boolean) { mix = v; sp.edit().putBoolean(KEY_MIX, v).apply() }
     fun setAccent(i: Int) {

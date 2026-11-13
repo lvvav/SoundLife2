@@ -341,7 +341,7 @@ fun SoundLifeApp(controller: MediaController?) {
     }
     }
     if (showFull && controller != null) FullPlayer(ps, controller) { showFull = false }
-    if (showSettings) SettingsDialog { showSettings = false }
+    if (showSettings) SettingsHub { showSettings = false }
     AddToPlaylistDialog()
 }
 

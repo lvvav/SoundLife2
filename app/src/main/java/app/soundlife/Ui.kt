@@ -237,6 +237,7 @@ val ShapePill = androidx.compose.foundation.shape.RoundedCornerShape(99.dp)
 /** Плавное появление содержимого: затухание и подъём на 260 мс, один раз при показе элемента. */
 @Composable
 fun Appear(content: @Composable () -> Unit) {
+    if (!Settings.anim) { content(); return }
     val state = remember { MutableTransitionState(false).apply { targetState = true } }
     AnimatedVisibility(
         visibleState = state,
