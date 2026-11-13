@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material3.Button
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.ButtonDefaults
@@ -47,6 +48,8 @@ internal fun SettingsHub(onClose: () -> Unit) {
     var showAccount by remember { mutableStateOf(false) }
     var showUpd by remember { mutableStateOf(false) }
     var showInfo by remember { mutableStateOf(false) }
+    var showAdmin by remember { mutableStateOf(false) }
+    if (showAdmin) AdminDialog { showAdmin = false }
     if (showAccount) SettingsDialog { showAccount = false }
     if (showUpd) UpdatesDialog { showUpd = false }
     if (showInfo) InfoDialog { showInfo = false }
@@ -56,6 +59,7 @@ internal fun SettingsHub(onClose: () -> Unit) {
         "play" -> "Воспроизведение"
         "notif" -> "Уведомления"
         "reset" -> "Сброс"
+        "dev" -> "Для разработчиков"
         else -> "Настройки"
     }
     Dialog(onDismissRequest = back, properties = DialogProperties(usePlatformDefaultWidth = false)) {
@@ -75,6 +79,7 @@ internal fun SettingsHub(onClose: () -> Unit) {
                 "play" -> PlayPage()
                 "notif" -> NotifPage()
                 "reset" -> ResetPage()
+                "dev" -> DevPage(onOpenAdmin = { showAdmin = true })
             }
         }
     }
@@ -96,6 +101,7 @@ private fun HubMain(onAccount: () -> Unit, onPage: (String) -> Unit, onUpdates: 
         },
         HubItem("О приложении", "Версия, сборка", Icons.Filled.Info, onInfo),
         HubItem("Сброс настроек", "Вернуть всё по умолчанию", Icons.Filled.Refresh) { onPage("reset") },
+        HubItem("Для разработчиков", if (Settings.adminOn) "Админ-панель включена" else "Выключено", Icons.Filled.Build) { onPage("dev") },
     )
     LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
         items(rows) { it ->
@@ -178,6 +184,20 @@ private fun ResetPage() {
             colors = ButtonDefaults.buttonColors(containerColor = Hover, contentColor = TextC),
         ) { Text("Сбросить настройки") }
         if (done) Text("Настройки сброшены", color = Acc, fontSize = 13.sp)
+    }
+}
+
+@Composable
+private fun DevPage(onOpenAdmin: () -> Unit) {
+    Column {
+        ToggleRow("Админ-панель", "Правка названий, артистов, альбомов и обложек альбомов. Вход по почте или нику, паролю и секретному слову", Settings.adminOn) { Settings.setAdminOn(it) }
+        if (Settings.adminOn) {
+            Button(
+                onClick = onOpenAdmin,
+                colors = ButtonDefaults.buttonColors(containerColor = Acc, contentColor = OnAcc),
+                modifier = Modifier.padding(16.dp),
+            ) { Text("Открыть админ-панель") }
+        }
     }
 }
 

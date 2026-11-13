@@ -173,7 +173,12 @@ object Settings {
         siteT = p.getLong("site_set_t", 0L)
         Palette.set(p.getLong("site_bg", 0xFF000000L))
         anim = p.getBoolean("f_anim", true)
+        adminOn = p.getBoolean("f_admin", false)
     }
+    /** Пункт «Админ-панель» в настройках для разработчиков. */
+    var adminOn by mutableStateOf(false)
+        private set
+    fun setAdminOn(v: Boolean) { adminOn = v; sp.edit().putBoolean("f_admin", v).apply() }
     /** Анимации появления экранов и элементов (как на сайте, «без анимаций»). */
     var anim by mutableStateOf(true)
         private set

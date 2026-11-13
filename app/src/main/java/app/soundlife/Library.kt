@@ -19,6 +19,11 @@ data class Track(
     val img: String = "",
     /** true = 30-секундный отрывок из iTunes; в библиотеку не попадает. */
     val preview: Boolean = false,
+    /** Артист альбома, год, номер и диск: из тегов файла, затем meta.json и правок админки. */
+    val albumArtist: String = "",
+    val year: String = "",
+    val num: Int = 0,
+    val disc: Int = 0,
 )
 
 /** Правило для файлов без тегов (как RULES в index.html). */
@@ -84,8 +89,8 @@ object Library {
 
         if (byPath.isEmpty()) throw (lastErr ?: RuntimeException("В хранилищах нет треков"))
 
-        return byPath.values
-            .map { it.withMeta(meta[it.path]) }
+        val enriched = Overrides.apply(Id3.enrich(ctx, byPath.values.toList()).map { it.withMeta(meta[it.path]) })
+        return enriched
             // одинаковые песни (артист + название) показываем один раз; предпочитаем FLAC
             .groupBy { dupKey(it) }
             .values
@@ -143,6 +148,10 @@ object Library {
             title = o.optString("t").ifBlank { title },
             artist = o.optString("a").ifBlank { artist },
             album = o.optString("al").ifBlank { album },
+            albumArtist = o.optString("aa").ifBlank { albumArtist },
+            year = o.optString("y").ifBlank { year },
+            num = o.optInt("n", 0).takeIf { it > 0 } ?: num,
+            disc = o.optInt("d", 0).takeIf { it > 0 } ?: disc,
         )
     }
 
