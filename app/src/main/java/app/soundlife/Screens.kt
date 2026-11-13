@@ -586,19 +586,26 @@ private fun SearchScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen
 
     Column(Modifier.fillMaxSize()) {
         Text("Поиск", color = TextC, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.6).sp, modifier = Modifier.padding(start = 16.dp, top = 12.dp))
-        OutlinedTextField(
-            value = q, onValueChange = { q = it }, singleLine = true,
-            placeholder = { Text("Треки, артисты, альбомы", color = Mut) },
-            leadingIcon = { Icon(Icons.Filled.Search, null, tint = Mut) },
-            trailingIcon = { if (q.isNotEmpty()) IconButton(onClick = { q = "" }) { Icon(Icons.Filled.Close, "Очистить", tint = Mut) } },
-            shape = ShapeCard,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Acc, unfocusedBorderColor = Line,
-                focusedContainerColor = Panel, unfocusedContainerColor = Panel,
-                cursorColor = Acc, focusedTextColor = TextC, unfocusedTextColor = TextC,
-            ),
-            modifier = Modifier.fillMaxWidth().padding(16.dp, 10.dp),
-        )
+        // Белая строка поиска как в Spotify: закруглённая таблетка, без рамки
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp).height(52.dp)
+                .clip(RoundedCornerShape(50)).background(Color.White).padding(start = 16.dp, end = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Filled.Search, null, tint = Color(0xFF121212), modifier = Modifier.size(24.dp))
+            Spacer(Modifier.width(10.dp))
+            androidx.compose.foundation.text.BasicTextField(
+                value = q, onValueChange = { q = it }, singleLine = true,
+                textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF121212), fontSize = 16.sp),
+                cursorBrush = androidx.compose.ui.graphics.SolidColor(Color(0xFF121212)),
+                modifier = Modifier.weight(1f),
+                decorationBox = { inner ->
+                    if (q.isEmpty()) Text("Что хотите послушать?", color = Color(0xFF6A6A6A), fontSize = 16.sp)
+                    inner()
+                },
+            )
+            if (q.isNotEmpty()) IconButton(onClick = { q = "" }) { Icon(Icons.Filled.Close, "Очистить", tint = Color(0xFF121212)) }
+        }
         if (query.isEmpty()) {
             Text("Жанры", color = TextC, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
             val genres = listOf(
