@@ -992,9 +992,19 @@ private fun DetailScreen(d: Detail, cat: Catalog, ps: PlayerUi, c: MediaControll
                 Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад", tint = TextC) }
                 }
-                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Box(Modifier.size(230.dp).clip(RoundedCornerShape(10.dp))) {
-                        Cover(info.seed, 230.dp, info.round, info.icon, img = info.tracks.firstOrNull { it.img.isNotBlank() }?.img.orEmpty())
+                if (d is Detail.Artist) {
+                    // Страница исполнителя: большое фото на всю ширину, затемнение снизу
+                    val heroImg = info.tracks.firstOrNull { it.img.isNotBlank() }?.img.orEmpty()
+                    Box(Modifier.fillMaxWidth().height(300.dp).clip(RoundedCornerShape(16.dp))) {
+                        if (heroImg.isNotBlank()) RemoteImage(heroImg, Modifier.fillMaxSize())
+                        else Cover(info.seed, 300.dp, img = "")
+                        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xCC000000))))) {}
+                    }
+                } else {
+                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Box(Modifier.size(230.dp).clip(RoundedCornerShape(10.dp))) {
+                            Cover(info.seed, 230.dp, info.round, info.icon, img = info.tracks.firstOrNull { it.img.isNotBlank() }?.img.orEmpty())
+                        }
                     }
                 }
                 Spacer(Modifier.height(18.dp))
