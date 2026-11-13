@@ -122,6 +122,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.LocalIndication
 
 // ───────────────────────── данные ─────────────────────────
 
@@ -878,8 +879,13 @@ private fun TrackRow(t: Track, playing: Boolean, onClick: () -> Unit) =
 
 @Composable
 private fun TrackRowInner(t: Track, playing: Boolean, onClick: () -> Unit) {
+    val rowSrc = remember { MutableInteractionSource() }
+    val rowPressed by rowSrc.collectIsPressedAsState()
+    val rowScale by animateFloatAsState(if (rowPressed) 0.98f else 1f, label = "rowPress")
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(start = 16.dp, top = 6.dp, end = 4.dp, bottom = 6.dp),
+        Modifier.fillMaxWidth().graphicsLayer { scaleX = rowScale; scaleY = rowScale }
+            .clickable(interactionSource = rowSrc, indication = LocalIndication.current, onClick = onClick)
+            .padding(start = 16.dp, top = 6.dp, end = 4.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(contentAlignment = Alignment.Center) {
