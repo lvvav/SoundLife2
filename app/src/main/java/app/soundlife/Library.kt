@@ -124,17 +124,23 @@ object Library {
         val img = coverFor(p, imgs)
 
         RULES.firstOrNull { it.test.containsMatchIn(name) }?.let { r ->
-            return Track(p, unnum(name), r.artist, r.album, url, img)
+            return Track(p, unnum(name), r.artist, r.album, url, img, num = numOf(name))
         }
         val sp = name.split(" - ").toMutableList()
         var artist = if (sp.size > 1) sp.removeAt(0).trim() else folderName.ifBlank { "Неизвестный артист" }
         val title = unnum(sp.joinToString(" - ").trim().ifBlank { name })
         if (sp.size > 1 || artist != folderName) artist = unnum(artist)
-        return Track(p, title, artist, folderName, url, img)
+        return Track(p, title, artist, folderName, url, img, num = numOf(name))
     }
 
     private val UNNUM1 = Regex("^(\\d{1,3})\\s*[.)]\\s*(.+)$")
     private val UNNUM2 = Regex("^(\\d{1,3})\\s+-\\s+(.+)$")
+    /** Номер трека из начала имени файла: «01. Название» или «01 - Название». */
+    private fun numOf(x: String): Int {
+        val m = UNNUM1.find(x) ?: UNNUM2.find(x) ?: return 0
+        return m.groupValues[1].toIntOrNull() ?: 0
+    }
+
     private fun unnum(x: String): String {
         val m = UNNUM1.find(x) ?: UNNUM2.find(x) ?: return x
         return m.groupValues[2].trim()
