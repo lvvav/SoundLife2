@@ -130,6 +130,7 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.ui.draw.paint
 
 // ───────────────────────── данные ─────────────────────────
 
@@ -645,6 +646,12 @@ private fun LibraryScreen(cat: Catalog, onOpen: (Detail) -> Unit, onSettings: ()
                 )
             }
         }
+        if (filter == 0) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                GradTile("Любимые", plural(favCount), listOf(Color(0xFFB721FF), Color(0xFF21D4FD)), Icons.Filled.Favorite, Modifier.weight(1f)) { onOpen(Detail.Liked) }
+                GradTile("Хочу послушать", plural(Wishes.list.size), listOf(Color(0xFFFF8A00), Color(0xFFE52E71)), Icons.Filled.Add, Modifier.weight(1f)) { onOpen(Detail.Wish) }
+            }
+        }
         LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
             if (filter == 0) {
                 item { LibRow("Любимые треки", plural(favCount), "liked", icon = Icons.Filled.Favorite) { onOpen(Detail.Liked) } }
@@ -931,6 +938,19 @@ internal fun Cover(seed: String, size: Dp, round: Boolean = false, icon: ImageVe
 }
 
 @Composable
+@Composable
+private fun GradTile(title: String, sub: String, colors: List<Color>, icon: ImageVector, modifier: Modifier, onClick: () -> Unit) {
+    Box(
+        modifier.height(96.dp).clip(ShapeCard).background(Brush.linearGradient(colors)).clickable(onClick = onClick).padding(12.dp),
+    ) {
+        Icon(icon, null, tint = Color.White.copy(alpha = 0.9f), modifier = Modifier.size(22.dp).align(Alignment.TopStart))
+        Column(Modifier.align(Alignment.BottomStart)) {
+            Text(title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(sub, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
+        }
+    }
+}
+
 @Composable
 private fun LibRow(title: String, sub: String, seed: String, round: Boolean = false, icon: ImageVector? = null, img: String = "", onClick: () -> Unit) =
     Appear { LibRowInner(title, sub, seed, round, icon, img, onClick) }
