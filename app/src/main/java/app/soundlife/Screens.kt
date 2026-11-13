@@ -58,6 +58,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.OutlinedTextField
@@ -991,7 +992,6 @@ internal fun Cover(seed: String, size: Dp, round: Boolean = false, icon: ImageVe
 }
 
 @Composable
-@Composable
 private fun NewestDialog(tracks: List<Track>, c: MediaController?, onClose: () -> Unit) {
     val list = remember(tracks) { tracks.takeLast(50).reversed() }
     androidx.compose.ui.window.Dialog(onDismissRequest = onClose, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
@@ -1060,7 +1060,6 @@ private fun LibRowInner(title: String, sub: String, seed: String, round: Boolean
     }
 }
 
-@Composable
 @Composable
 private fun TrackRow(t: Track, playing: Boolean, onClick: () -> Unit) =
     Appear { TrackRowInner(t, playing, onClick) }
@@ -1577,7 +1576,6 @@ private fun readMedia(ctx: Context, uri: Uri): Triple<ByteArray, String, String>
     }
 }
 
-@Composable
 @Composable
 private fun ChatBubble(
     m: Chat.Msg, mine: Boolean, rx: Map<String, String>, selected: Boolean,
