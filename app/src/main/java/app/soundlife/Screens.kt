@@ -391,7 +391,14 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
         item {
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 12.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(hello, color = TextC, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                IconButton(onClick = onMenu) { Icon(Icons.Filled.Menu, "Меню", tint = Mut) }
+                Row(
+                    Modifier.clip(RoundedCornerShape(50)).background(Hover).clickable { onMenu() }.padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Filled.Menu, "Меню", tint = TextC, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Меню", color = TextC, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                }
                 IconButton(onClick = onSettings) { Icon(Icons.Filled.Settings, "Настройки", tint = Mut) }
             }
         }
@@ -533,11 +540,11 @@ private fun ArtistCard(name: String, img: String, onClick: () -> Unit) {
 
 @Composable
 private fun AlbumCard(a: AlbumInfo, onClick: () -> Unit) {
-    Column(Modifier.width(130.dp).clip(ShapeSmall).clickable(onClick = onClick)) {
-        Cover(a.name, 130.dp, img = a.img)
-        Spacer(Modifier.height(6.dp))
-        Text(a.name, color = TextC, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Text(a.artist, color = Mut, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    Column(Modifier.width(158.dp).clickable(onClick = onClick)) {
+        Box(Modifier.clip(RoundedCornerShape(18.dp))) { Cover(a.name, 158.dp, img = a.img, square = true) }
+        Spacer(Modifier.height(10.dp))
+        Text(a.name, color = TextC, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(a.artist, color = Mut, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
