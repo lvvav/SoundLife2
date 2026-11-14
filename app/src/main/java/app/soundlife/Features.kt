@@ -1,5 +1,12 @@
 package app.soundlife
 
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material.icons.filled.MoreVert
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -111,12 +118,28 @@ fun RecentDialog(tracks: List<Track>, c: MediaController?, onClose: () -> Unit) 
                 items(recent) { idx ->
                     val t = tracks[idx]
                     Row(
-                        Modifier.fillMaxWidth().clickable { c?.playTracks(tracks, idx, false); onClose() }.padding(vertical = 10.dp),
+                        Modifier.fillMaxWidth().clickable { c?.playTracks(tracks, idx, false); onClose() }.padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        Cover(t.title.ifBlank { "?" }, 48.dp, square = true, img = t.img)
+                        Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
                             Text(t.title, color = TextC, maxLines = 1, fontWeight = FontWeight.Medium, fontSize = 15.sp)
                             Text(t.artist, color = Mut, maxLines = 1, fontSize = 13.sp)
+                        }
+                        var menu by remember { mutableStateOf(false) }
+                        Box {
+                            IconButton(onClick = { menu = true }) { Icon(Icons.Filled.MoreVert, "Меню", tint = Mut) }
+                            DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                                DropdownMenuItem(
+                                    text = { Text(if (Favorites.has(t.path)) "Убрать из любимого" else "В любимое") },
+                                    onClick = { Favorites.toggle(t.path); menu = false },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Играть") },
+                                    onClick = { c?.playTracks(tracks, idx, false); menu = false; onClose() },
+                                )
+                            }
                         }
                     }
                 }
