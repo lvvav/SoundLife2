@@ -734,9 +734,10 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
     val favCount = Favorites.ids.count { id -> cat.tracks.any { it.path == id } }
     val myArtists = cat.artists.filter { it.first in subA }
     val myAlbums = cat.albums.filter { it.name in subB }
-    val showPl = filter == 0 || filter == 1
-    val showAl = filter == 0 || filter == 2
-    val showAr = filter == 0 || filter == 3
+    val showPl = filter == 0
+    val showAl = filter == 1
+    val showAr = filter == 2
+    val showPeople = filter == 3
     val empty = (!showPl || names.isEmpty()) && (!showAl || myAlbums.isEmpty()) && (!showAr || myArtists.isEmpty()) && Subs.ym.isEmpty()
 
     Column(Modifier.fillMaxSize()) {
@@ -750,7 +751,7 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            itemsIndexed(listOf("Всё", "Плейлисты", "Альбомы", "Исполнители")) { i, label ->
+            itemsIndexed(listOf("Плейлисты", "Альбомы", "Исполнители", "Люди")) { i, label ->
                 FilterChip(
                     selected = filter == i, onClick = { filter = i }, label = { Text(label, fontSize = 15.sp, fontWeight = FontWeight.SemiBold) },
                     colors = FilterChipDefaults.filterChipColors(
@@ -786,7 +787,7 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
                     }
                 }
             }
-            if (filter == 0) {
+            if (showPeople) {
                 item { LibRow("Найти человека", "По нику", "findperson", icon = Icons.Filled.Search) { findNick = true } }
                 items(Follows.users, key = { "fu:$it" }) { uid ->
                     val p = Follows.people[uid]

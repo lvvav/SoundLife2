@@ -149,14 +149,6 @@ private fun HubMain(onAccount: () -> Unit, onPage: (String) -> Unit, onUpdates: 
 }
 
 @Composable
-private fun PillButton(text: String, onClick: () -> Unit) {
-    Box(
-        Modifier.clip(RoundedCornerShape(50)).border(1.dp, Line, RoundedCornerShape(50))
-            .clickable(onClick = onClick).padding(horizontal = 18.dp, vertical = 10.dp),
-    ) { Text(text, color = TextC, fontSize = 14.sp, fontWeight = FontWeight.SemiBold) }
-}
-
-@Composable
 private fun InfoLine(title: String, sub: String, trailing: (@Composable () -> Unit)? = null) {
     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
@@ -269,10 +261,6 @@ private fun DevicesPage() {
     Column {
         InfoLine("Устройства", "других устройств онлайн нет: откройте SoundLife с этим аккаунтом на другом устройстве")
         InfoLine("Слушать вместе", "музыка играет одновременно у всех в комнате, пауза и треки может менять любой")
-        Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            PillButton("Создать комнату") {}
-            PillButton("Войти по коду") {}
-        }
     }
 }
 
@@ -282,10 +270,6 @@ private fun TrafficPage() {
         SubHeader("Офлайн и приложение")
         InfoLine("Мои файлы", "свои треки только для вас: хранятся на этом устройстве, никому не видны")
         InfoLine("Офлайн-память", "Сохраните избранное или очистите память")
-        Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            PillButton("Сохранить избранное") {}
-            PillButton("Очистить") {}
-        }
     }
 }
 
