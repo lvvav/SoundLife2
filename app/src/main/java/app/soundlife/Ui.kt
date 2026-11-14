@@ -198,7 +198,7 @@ internal fun MiniPlayer(ps: PlayerUi, c: MediaController, onOpen: () -> Unit) {
             Settings.setAccentArgb(vivid(v))
         }
     }
-    val glassShape = RoundedCornerShape(22.dp)
+    val glassShape = RoundedCornerShape(26.dp)
     val glassBrush = Brush.verticalGradient(
         listOf(Color.White.copy(alpha = 0.14f), Color.White.copy(alpha = 0.05f)),
     )
@@ -223,9 +223,10 @@ internal fun MiniPlayer(ps: PlayerUi, c: MediaController, onOpen: () -> Unit) {
         val progress by androidx.compose.animation.core.animateFloatAsState(target, label = "miniProgress")
         LinearProgressIndicator(
             progress = { progress },
-            modifier = Modifier.fillMaxWidth().height(2.dp), color = Acc, trackColor = Color(0x22FFFFFF),
+            modifier = Modifier.fillMaxWidth().height(3.dp), color = Acc, trackColor = Color(0x22FFFFFF),
         )
         var swipe by remember { mutableFloatStateOf(0f) }
+        val liked = Favorites.has(ps.mediaId)
         Row(
             Modifier.clickable(onClick = onOpen)
                 .pointerInput(Unit) {
@@ -234,28 +235,31 @@ internal fun MiniPlayer(ps: PlayerUi, c: MediaController, onOpen: () -> Unit) {
                         onDragEnd = { if (swipe > 120f) c.seekToPrevious() else if (swipe < -120f) c.seekToNext() },
                     ) { _, d -> swipe += d }
                 }
-                .padding(horizontal = 14.dp, vertical = 8.dp),
+                .padding(start = 10.dp, end = 6.dp, top = 10.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(Modifier.size(44.dp).clip(RoundedCornerShape(8.dp))) { Cover(ps.title.ifEmpty { "?" }, 44.dp, square = true, img = ps.artUrl) }
+            Box(Modifier.size(50.dp).clip(RoundedCornerShape(10.dp))) { Cover(ps.title.ifEmpty { "?" }, 50.dp, square = true, img = ps.artUrl) }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 AnimatedContent(targetState = ps.title, transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(150)) }, label = "miniTitle") { tt ->
-                    Text(tt, color = TextC, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 14.sp)
+                    Text(tt, color = TextC, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                 }
-                Text(ps.artist, color = Mut, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 12.sp)
+                Text(ps.artist, color = Mut, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 13.sp)
             }
             IconButton(onClick = { ps.mediaId?.let { Favorites.toggle(it) } }) {
-                Icon(if (Favorites.has(ps.mediaId)) Icons.Filled.CheckCircle else Icons.Filled.AddCircleOutline, "В любимое", tint = if (Favorites.has(ps.mediaId)) Acc else TextC)
+                Icon(Icons.Filled.Favorite, "В любимое", tint = if (liked) Acc else Mut, modifier = Modifier.size(22.dp))
             }
-            IconButton(onClick = { if (c.isPlaying) c.pause() else c.play() }) {
-                AnimatedContent(targetState = ps.isPlaying, transitionSpec = { (fadeIn(tween(180)) + scaleIn(initialScale = 0.7f)) togetherWith (fadeOut(tween(120)) + scaleOut(targetScale = 0.7f)) }, label = "miniPlay") { playing ->
-                    Icon(if (playing) Icons.Default.Pause else Icons.Default.PlayArrow, "Пауза/играть", tint = Acc)
+            IconButton(onClick = { c.seekToPrevious() }) { Icon(Icons.Default.SkipPrevious, "Назад", tint = TextC) }
+            Box(
+                Modifier.size(46.dp).clip(CircleShape).background(Acc).clickable { if (c.isPlaying) c.pause() else c.play() },
+                contentAlignment = Alignment.Center,
+            ) {
+                AnimatedContent(targetState = ps.isPlaying, transitionSpec = { (fadeIn(tween(180)) + scaleIn(initialScale = 0.7f)) togetherWith (fadeOut(tween(120)) + scaleOut(targetScale = 0.7f)) }, label = "miniPlayPause") { playing ->
+                    Icon(if (playing) Icons.Default.Pause else Icons.Default.PlayArrow, "Пауза/играть", tint = OnAcc)
                 }
             }
             IconButton(onClick = { c.seekToNext() }) { Icon(Icons.Default.SkipNext, "Далее", tint = TextC) }
         }
-    }
 }
 
 /** Состояние плеера для интерфейса. */
