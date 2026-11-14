@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridScope
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -254,32 +257,27 @@ fun SoundLifeApp(controller: MediaController?) {
         drawerContent = {
             ModalDrawerSheet(modifier = Modifier.width(300.dp), drawerContainerColor = Bg) {
                 val nickText = Profile.nick.ifEmpty { "SoundLife" }
-                val openProfile: () -> Unit = {
-                    drawerScope.launch { drawer.close() }
-                    Auth.userId()?.let { detail = Detail.User(it, Profile.nick) }
-                }
-                Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 20.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(56.dp).clip(CircleShape).clickable(onClick = openProfile)) { AvatarCircle(Profile.avatar, 56.dp) }
+                val close = { drawerScope.launch { drawer.close() } }
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)
+                        .clip(RoundedCornerShape(18.dp)).background(Hover)
+                        .clickable { close(); Auth.userId()?.let { detail = Detail.User(it, Profile.nick) } }
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    AvatarCircle(Profile.avatar, 52.dp)
                     Spacer(Modifier.width(14.dp))
-                    Column(Modifier.weight(1f).clickable(onClick = openProfile)) {
-                        Text(nickText, color = TextC, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Column(Modifier.weight(1f)) {
+                        Text(nickText, color = TextC, fontWeight = FontWeight.Bold, fontSize = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(if (Auth.signedIn) "Посмотреть профиль" else "Вы не вошли", color = Mut, fontSize = 14.sp)
                     }
-                    IconButton(onClick = { drawerScope.launch { drawer.close() } }) { Icon(SiteIcons.X, "Закрыть", tint = Mut) }
                 }
-                HorizontalDivider(color = Line, modifier = Modifier.padding(horizontal = 16.dp))
-                Spacer(Modifier.height(8.dp))
-                DrawerRow(SiteIcons.Lib, "Каталог", null) { drawerScope.launch { drawer.close() }; tabIx = 0; detail = null }
-                DrawerRow(SiteIcons.Disc, "Альбомы", Subs.albums.size) { drawerScope.launch { drawer.close() }; tabIx = 2; detail = null }
-                DrawerRow(SiteIcons.User, "Артисты", Subs.artists.size) { drawerScope.launch { drawer.close() }; tabIx = 2; detail = null }
-                DrawerRow(SiteIcons.List, "Плейлисты", Playlists.lists.size) { drawerScope.launch { drawer.close() }; tabIx = 2; detail = null }
-                DrawerRow(SiteIcons.Heart, "Избранное", Favorites.ids.size) { drawerScope.launch { drawer.close() }; detail = Detail.Liked }
-                DrawerRow(SiteIcons.Clock, "История", null) { drawerScope.launch { drawer.close() }; showRecentApp = true }
-                DrawerRow(SiteIcons.Chart, "Итоги", null) { drawerScope.launch { drawer.close() }; showStatsApp = true }
-                HorizontalDivider(color = Line, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
-                DrawerRow(SiteIcons.Msg, "Сообщения", null) { drawerScope.launch { drawer.close() }; detail = Detail.Inbox }
-                DrawerRow(SiteIcons.Dl, "Обновления", null) { drawerScope.launch { drawer.close() }; showSettings = true }
-                DrawerRow(SiteIcons.Cog, "Настройки", null) { drawerScope.launch { drawer.close() }; showSettings = true }
+                Spacer(Modifier.height(4.dp))
+                DrawerRow(SiteIcons.Msg, "Сообщения") { close(); detail = Detail.Inbox }
+                DrawerRow(SiteIcons.Chart, "Статистика прослушивания") { close(); showStatsApp = true }
+                DrawerRow(SiteIcons.Clock, "Недавние") { close(); showRecentApp = true }
+                DrawerRow(SiteIcons.News, "Обновления") { close(); showSettings = true }
+                DrawerRow(SiteIcons.Cog, "Настройки и конфиденциальность") { close(); showSettings = true }
             }
         },
     ) {
@@ -404,6 +402,14 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
     if (showStats) StatsDialog { showStats = false }
     var showAllTracks by remember { mutableStateOf(false) }
     var homeTab by rememberSaveable { mutableIntStateOf(0) }
+    var showAllArtists by remember { mutableStateOf(false) }
+    var showAllAlbums by remember { mutableStateOf(false) }
+    if (showAllArtists) AllGridDialog("Артисты", { showAllArtists = false }) {
+        items(artists, key = { it.first }) { a -> ArtistCard(a.first, artistImg(a.first, a.second)) { showAllArtists = false; onOpen(Detail.Artist(a.first)) } }
+    }
+    if (showAllAlbums) AllGridDialog("Альбомы", { showAllAlbums = false }) {
+        items(albums, key = { it.name }) { a -> AlbumCard(a) { showAllAlbums = false; onOpen(Detail.Album(a.name)) } }
+    }
     LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
         item {
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 12.dp, end = 16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -496,26 +502,26 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
             }
         }
         if (artists.isNotEmpty() && (homeTab == 0 || homeTab == 1)) {
-            item { SectionTitle("Артисты") }
+            item { SeeAllHeader("Артисты") { showAllArtists = true } }
             item {
-                LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(artists, key = { it.first }) { a -> ArtistCard(a.first, artistImg(a.first, a.second)) { onOpen(Detail.Artist(a.first)) } }
+                Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    artists.take(4).chunked(2).forEach { row ->
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            row.forEach { a -> ArtistCard(a.first, artistImg(a.first, a.second)) { onOpen(Detail.Artist(a.first)) } }
+                        }
+                    }
                 }
             }
         }
         if (albums.isNotEmpty() && (homeTab == 0 || homeTab == 2)) {
-            item { SectionTitle("Альбомы") }
+            item { SeeAllHeader("Альбомы") { showAllAlbums = true } }
             item {
-                LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(albums, key = { it.name }) { a -> AlbumCard(a) { onOpen(Detail.Album(a.name)) } }
-                }
-            }
-        }
-        if (homeTab == 0 || homeTab == 3) item { SectionTitle("Все треки") }
-        if (homeTab == 0 || homeTab == 3) item {
-            Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 8.dp), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = { showAllTracks = !showAllTracks }) {
-                    Text(if (showAllTracks) "Свернуть" else "Показать все · ${cat.tracks.size}", color = Acc)
+                Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    albums.take(4).chunked(2).forEach { row ->
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            row.forEach { a -> AlbumCard(a) { onOpen(Detail.Album(a.name)) } }
+                        }
+                    }
                 }
             }
         }
@@ -1271,7 +1277,7 @@ private fun UserScreen(d: Detail.User, onBack: () -> Unit, onOpen: (Detail) -> U
         item {
             Column(Modifier.fillMaxWidth().offset(y = (-56).dp).padding(horizontal = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(Modifier.clip(CircleShape).background(Bg).padding(4.dp)) {
-                    AvatarCircle(person?.avatar.orEmpty(), 104.dp)
+                    AvatarCircle(if (me) Profile.avatar else person?.avatar.orEmpty(), 104.dp)
                 }
                 Spacer(Modifier.height(10.dp))
                 Text(nick?.let { "@$it" } ?: "Пользователь", color = TextC, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.4).sp)
@@ -1281,6 +1287,7 @@ private fun UserScreen(d: Detail.User, onBack: () -> Unit, onOpen: (Detail) -> U
                     StatCard("Треки", if (loading) "…" else lists.sumOf { it.tracks.size }.toString(), Modifier.weight(1f))
                 }
                 Spacer(Modifier.height(14.dp))
+                if (error.isNotEmpty()) Text("Не удалось загрузить профиль: $error", color = Mut, fontSize = 13.sp)
                 if (me) {
                     Text("Это вы", color = Mut, fontSize = 14.sp)
                 } else {
@@ -2076,17 +2083,45 @@ private fun CollabScreen(d: Detail.Collab, cat: Catalog, ps: PlayerUi, c: MediaC
     )
 }
 
-/** Строка меню: значок, название и счётчик справа (как в боковом меню сайта). */
+/** Строка меню как на сайте: значок и подпись, без лишних счётчиков. */
 @Composable
-private fun DrawerRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, count: Int?, onClick: () -> Unit) {
+private fun DrawerRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 12.dp).clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 13.dp),
+            .padding(horizontal = 12.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, null, tint = Mut, modifier = Modifier.size(22.dp))
-        Spacer(Modifier.width(16.dp))
-        Text(label, color = TextC, fontSize = 16.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
-        if (count != null && count > 0) Text("$count", color = Mut, fontSize = 13.sp)
+        Icon(icon, null, tint = TextC, modifier = Modifier.size(24.dp))
+        Spacer(Modifier.width(18.dp))
+        Text(label, color = TextC, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+/** Полный список сеткой (открывается кнопкой «Все», вместо бесконечной ленты). */
+@Composable
+private fun AllGridDialog(title: String, onClose: () -> Unit, body: LazyGridScope.() -> Unit) {
+    Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Column(Modifier.fillMaxSize().background(Bg).padding(top = 12.dp)) {
+            Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onClose) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад", tint = TextC) }
+                Text(title, color = TextC, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            }
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                contentPadding = PaddingValues(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                content = body,
+            )
+        }
+    }
+}
+
+/** Заголовок раздела с кнопкой «Все». */
+@Composable
+private fun SeeAllHeader(title: String, onAll: () -> Unit) {
+    Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 28.dp, end = 8.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(title, color = TextC, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.4).sp, modifier = Modifier.weight(1f))
+        TextButton(onClick = onAll) { Text("Все", color = Acc, fontWeight = FontWeight.SemiBold) }
     }
 }

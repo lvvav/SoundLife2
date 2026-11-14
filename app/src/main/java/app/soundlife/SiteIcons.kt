@@ -34,5 +34,6 @@ internal object SiteIcons {
     val Msg by lazy { icon("M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z") }
     val Dl by lazy { icon("M12 3v12m0 0-5-5m5 5 5-5M4 21h16") }
     val Search by lazy { icon("M4,11 a7,7 0 1 0 14,0 a7,7 0 1 0 -14,0", "m21 21-4.3-4.3") }
+    val News by lazy { icon("M3 10v4a1 1 0 0 0 1 1h2l6 4V5L6 9H4a1 1 0 0 0-1 1zM16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12") }
     val X by lazy { icon("M6 6l12 12M18 6 6 18") }
 }
