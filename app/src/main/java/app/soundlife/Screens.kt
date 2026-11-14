@@ -556,7 +556,7 @@ private fun SeeAllCard(round: Boolean, onClick: () -> Unit) {
             Modifier.size(116.dp).clip(shape).background(Hover).border(1.dp, Line, shape),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Filled.KeyboardArrowRight, "Показать всё", tint = TextC, modifier = Modifier.size(36.dp))
+            Icon(Icons.Filled.Add, "Показать всё", tint = TextC, modifier = Modifier.size(36.dp))
         }
     }
 }
