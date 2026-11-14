@@ -41,6 +41,11 @@ private val IMG_EXT = listOf("jpg", "jpeg", "png", "webp")
 private val COVER_NAMES = listOf("cover", "folder", "artwork")
 
 /** Фото артистов из meta.json «@artists» (как на сайте): ключ — имя артиста в нижнем регистре, значение — готовая ссылка. */
+/** Последний загруженный каталог: нужен синхронизации, чтобы сопоставить сохранённые альбомы и артистов сайта. */
+internal object LibraryCache {
+    @Volatile var tracks: List<Track> = emptyList()
+}
+
 internal object ArtistPhotos {
     @Volatile var map: Map<String, String> = emptyMap()
 }
@@ -108,6 +113,7 @@ object Library {
         ArtistPhotos.map = artistPhotos
 
         val enriched = Overrides.apply(Id3.enrich(ctx, byPath.values.toList()).map { it.withMeta(meta[it.path]) })
+        LibraryCache.tracks = enriched
         return enriched
             // одинаковые песни (артист + название) показываем один раз; предпочитаем FLAC
             .groupBy { dupKey(it) }

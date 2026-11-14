@@ -250,50 +250,36 @@ fun SoundLifeApp(controller: MediaController?) {
     val drawerScope = rememberCoroutineScope()
     ModalNavigationDrawer(
         drawerState = drawer,
-        gesturesEnabled = false,
+        gesturesEnabled = true,
         drawerContent = {
-            ModalDrawerSheet(drawerContainerColor = Bg) {
+            ModalDrawerSheet(modifier = Modifier.width(300.dp), drawerContainerColor = Bg) {
                 val nickText = Profile.nick.ifEmpty { "SoundLife" }
-                Row(
-                    Modifier.fillMaxWidth().clickable {
-                        drawerScope.launch { drawer.close() }
-                        Auth.userId()?.let { detail = Detail.User(it, Profile.nick) }
-                    }.padding(horizontal = 20.dp, vertical = 22.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(
-                        Modifier.size(56.dp).clip(CircleShape).background(Brush.linearGradient(listOf(Color(0xFF7B2FF7), Color(0xFFF107A3)))),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(nickText.take(1).uppercase(), color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                    }
+                val openProfile = {
+                    drawerScope.launch { drawer.close() }
+                    Auth.userId()?.let { detail = Detail.User(it, Profile.nick) }
+                }
+                Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 20.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(56.dp).clip(CircleShape).clickable(onClick = openProfile)) { AvatarCircle(Profile.avatar, 56.dp) }
                     Spacer(Modifier.width(14.dp))
-                    Column(Modifier.weight(1f)) {
+                    Column(Modifier.weight(1f).clickable(onClick = openProfile)) {
                         Text(nickText, color = TextC, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(if (Auth.signedIn) "Посмотреть профиль" else "Вы не вошли", color = Mut, fontSize = 14.sp)
                     }
+                    IconButton(onClick = { drawerScope.launch { drawer.close() } }) { Icon(SiteIcons.X, "Закрыть", tint = Mut) }
                 }
-                HorizontalDivider(color = Line)
+                HorizontalDivider(color = Line, modifier = Modifier.padding(horizontal = 16.dp))
                 Spacer(Modifier.height(8.dp))
-                listOf(
-                    Triple("Профиль", Icons.Filled.Person, { Auth.userId()?.let { detail = Detail.User(it, Profile.nick) } }),
-                    Triple("Статистика", Icons.Filled.Info, { showStatsApp = true }),
-                    Triple("Недавние", Icons.Filled.Star, { showRecentApp = true }),
-                    Triple("Сообщения", Icons.AutoMirrored.Filled.Send, { detail = Detail.Inbox }),
-                    Triple("Любимые треки", Icons.Filled.Favorite, { detail = Detail.Liked }),
-                    Triple("Обновления", Icons.Filled.Refresh, { showSettings = true }),
-                    Triple("Настройки", Icons.Filled.Settings, { showSettings = true }),
-                ).forEach { (label, icon, act) ->
-                    Row(
-                        Modifier.fillMaxWidth().clickable { drawerScope.launch { drawer.close() }; act() }
-                            .padding(horizontal = 24.dp, vertical = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(icon, null, tint = TextC, modifier = Modifier.size(26.dp))
-                        Spacer(Modifier.width(20.dp))
-                        Text(label, color = TextC, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-                    }
-                }
+                DrawerRow(SiteIcons.Lib, "Каталог", null) { drawerScope.launch { drawer.close() }; tabIx = 0; detail = null }
+                DrawerRow(SiteIcons.Disc, "Альбомы", Subs.albums.size) { drawerScope.launch { drawer.close() }; tabIx = 2; detail = null }
+                DrawerRow(SiteIcons.User, "Артисты", Subs.artists.size) { drawerScope.launch { drawer.close() }; tabIx = 2; detail = null }
+                DrawerRow(SiteIcons.List, "Плейлисты", Playlists.lists.size) { drawerScope.launch { drawer.close() }; tabIx = 2; detail = null }
+                DrawerRow(SiteIcons.Heart, "Избранное", Favorites.ids.size) { drawerScope.launch { drawer.close() }; detail = Detail.Liked }
+                DrawerRow(SiteIcons.Clock, "История", null) { drawerScope.launch { drawer.close() }; showRecentApp = true }
+                DrawerRow(SiteIcons.Chart, "Итоги", null) { drawerScope.launch { drawer.close() }; showStatsApp = true }
+                HorizontalDivider(color = Line, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+                DrawerRow(SiteIcons.Msg, "Сообщения", null) { drawerScope.launch { drawer.close() }; detail = Detail.Inbox }
+                DrawerRow(SiteIcons.Dl, "Обновления", null) { drawerScope.launch { drawer.close() }; showSettings = true }
+                DrawerRow(SiteIcons.Cog, "Настройки", null) { drawerScope.launch { drawer.close() }; showSettings = true }
             }
         },
     ) {
@@ -2088,4 +2074,19 @@ private fun CollabScreen(d: Detail.Collab, cat: Catalog, ps: PlayerUi, c: MediaC
         },
         dismissButton = { TextButton(onClick = { confirmGone = false }) { Text("Отмена", color = Mut) } },
     )
+}
+
+/** Строка меню: значок, название и счётчик справа (как в боковом меню сайта). */
+@Composable
+private fun DrawerRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, count: Int?, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 12.dp).clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, null, tint = Mut, modifier = Modifier.size(22.dp))
+        Spacer(Modifier.width(16.dp))
+        Text(label, color = TextC, fontSize = 16.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+        if (count != null && count > 0) Text("$count", color = Mut, fontSize = 13.sp)
+    }
 }

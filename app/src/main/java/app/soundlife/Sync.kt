@@ -37,6 +37,9 @@ object Sync {
         }
     }
 
+    /** Ключ альбома как на сайте: «исполнитель|альбом» в нижнем регистре (исполнитель альбома или трека). */
+    private fun albumKeyOf(t: Track): String = (t.albumArtist.ifBlank { t.artist } + "|" + t.album).lowercase()
+
     /** Один цикл: скачать, объединить с локальным, записать обратно. Без входа — ничего не делает. */
     fun runOnce() {
         val uid = Auth.userId() ?: return
@@ -61,6 +64,23 @@ object Sync {
         val albums = ns.optJSONArray("albums").strings() + Subs.albums
         val remoteYm = ns.optJSONArray("ym")?.let { a -> (0 until a.length()).map { ymSubFrom(a.getJSONObject(it)) } }.orEmpty()
         val ymAll = (remoteYm + Subs.ym).distinctBy { it.kind + it.id }
+
+        // Сохранённые альбомы и артисты, как на сайте (data.lib = {al: ["исполнитель|альбом"], ar: ["исполнитель"]})
+        val catalog = LibraryCache.tracks
+        val lib = data.optJSONObject("lib") ?: JSONObject()
+        val libAl = LinkedHashSet<String>().apply { lib.optJSONArray("al")?.let { a -> for (i in 0 until a.length()) add(a.optString(i)) } }
+        val libAr = LinkedHashSet<String>().apply { lib.optJSONArray("ar")?.let { a -> for (i in 0 until a.length()) add(a.optString(i)) } }
+        val albumsAll = albums.toMutableSet()
+        val artistsAll = artists.toMutableSet()
+        for (t in catalog) {
+            if (t.album.isNotBlank() && t.album in albumsAll) libAl += albumKeyOf(t)
+            if (t.artist in artistsAll) libAr += t.artist.lowercase()
+        }
+        for (t in catalog) {
+            if (t.album.isNotBlank() && albumKeyOf(t) in libAl) albumsAll += t.album
+            if (t.artist.lowercase() in libAr) artistsAll += t.artist
+        }
+        data.put("lib", JSONObject().put("al", JSONArray(libAl.toList())).put("ar", JSONArray(libAr.toList())))
 
         data.put("favs", JSONArray(favs.toList()))
         data.put(
@@ -117,7 +137,7 @@ object Sync {
         // Локальные списки обновляем на главном потоке (состояние Compose)
         main.post {
             Favorites.mergeRemote(favs.toSet())
-            Subs.mergeRemote(artists, albums, ymAll)
+            Subs.mergeRemote(artistsAll.toSet(), albumsAll.toSet(), ymAll)
             Playlists.mergeRemote(mergedPl)
             Settings.applySite(siteAcc, siteBg, siteT)
         }
