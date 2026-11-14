@@ -171,6 +171,7 @@ object Settings {
         mono = p.getBoolean(KEY_MONO, false)
         accentIx = p.getInt(KEY_ACCENT, 0).coerceIn(0, ACCENTS.lastIndex)
         accentCustom = p.getLong("accent_custom", -1L).takeIf { it != -1L }
+        accentFromCover = p.getBoolean("accent_from_cover", false)
         siteT = p.getLong("site_set_t", 0L)
         Palette.set(0xFF0D0D11L)
         anim = p.getBoolean("f_anim", true)
@@ -198,6 +199,10 @@ object Settings {
     fun changeMono(v: Boolean) { mono = v; sp.edit().putBoolean(KEY_MONO, v).apply() }
     /** Акцент из обложки: произвольный цвет, сохраняется. */
     fun setAccentArgb(v: Long) { accentCustom = v; sp.edit().putLong("accent_custom", v).apply() }
+
+    /** Тема по обложке: при смене трека акцент берётся из обложки сам. */
+    var accentFromCover by mutableStateOf(false)
+    fun setAccentFromCover(v: Boolean) { accentFromCover = v; sp.edit().putBoolean("accent_from_cover", v).apply() }
 
     fun setAccent(i: Int) {
         accentIx = i

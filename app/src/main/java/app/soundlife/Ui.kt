@@ -4,6 +4,7 @@ import app.soundlife.R
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -179,6 +180,16 @@ internal fun fmt(ms: Long): String {
 
 @Composable
 internal fun MiniPlayer(ps: PlayerUi, c: MediaController, onOpen: () -> Unit) {
+    val coverArgbNow by produceState<Long?>(null, ps.artUrl) {
+        value = null
+        value = withContext(kotlinx.coroutines.Dispatchers.IO) { coverAverage(ps.artUrl) }
+    }
+    LaunchedEffect(coverArgbNow) {
+        val v = coverArgbNow
+        if (Settings.accentFromCover && v != null) {
+            Settings.setAccentArgb(0xFF000000L or (androidx.compose.ui.graphics.lerp(Color(v), Color.White, 0.25f).toArgb().toLong() and 0xFFFFFFL))
+        }
+    }
     val glassShape = RoundedCornerShape(22.dp)
     val glassBrush = Brush.verticalGradient(
         listOf(Color.White.copy(alpha = 0.14f), Color.White.copy(alpha = 0.05f)),

@@ -134,11 +134,16 @@ private fun HubMain(onAccount: () -> Unit, onPage: (String) -> Unit, onUpdates: 
             item(key = "h_$label") { SubHeader(label) }
             items(rows, key = { it.title }) { it ->
                 Row(
-                    Modifier.fillMaxWidth().clickable(onClick = it.onClick).padding(horizontal = 16.dp, vertical = 14.dp),
+                    Modifier.fillMaxWidth().clickable(onClick = it.onClick).padding(horizontal = 16.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    Box(
+                        Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(Hover),
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(it.icon, null, tint = TextC, modifier = Modifier.size(22.dp)) }
+                    Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(it.title, color = TextC, fontSize = 16.sp)
+                        Text(it.title, color = TextC, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                         Text(it.sub, color = Mut, fontSize = 13.sp, maxLines = 2)
                     }
                     Icon(Icons.Filled.ChevronRight, null, tint = Mut)
@@ -190,6 +195,9 @@ private fun LookPage() {
                     }
                 }
             }
+        }
+        item {
+            ToggleRow("Тема по обложке", "Акцент сам меняется под обложку играющего трека", Settings.accentFromCover) { Settings.setAccentFromCover(it) }
         }
         item { SubHeader("Цвет акцента") }
         itemsIndexed(ACCENTS) { i, (argb, name) ->
