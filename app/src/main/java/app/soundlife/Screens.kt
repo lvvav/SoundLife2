@@ -556,7 +556,7 @@ private fun SeeAllCard(round: Boolean, onClick: () -> Unit) {
             Modifier.size(116.dp).clip(shape).background(Hover).border(1.dp, Line, shape),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(androidx.compose.material.icons.automirrored.filled.ArrowForward, "Показать всё", tint = TextC, modifier = Modifier.size(36.dp))
+            Icon(androidx.compose.material.icons.filled.ChevronRight, "Показать всё", tint = TextC, modifier = Modifier.size(36.dp))
         }
     }
 }

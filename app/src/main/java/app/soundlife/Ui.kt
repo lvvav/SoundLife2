@@ -3,7 +3,6 @@ package app.soundlife
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeChild
 import dev.chrisbanes.haze.HazeStyle
-import dev.chrisbanes.haze.HazeTint
 
 import app.soundlife.R
 import androidx.compose.ui.text.font.Font
@@ -211,8 +210,7 @@ internal fun MiniPlayer(ps: PlayerUi, c: MediaController, onOpen: () -> Unit) {
                 state = GlassState,
                 shape = glassShape,
                 style = HazeStyle(
-                    backgroundColor = Bg,
-                    tint = HazeTint(Color.White.copy(alpha = 0.10f)),
+                    tint = Color.White.copy(alpha = 0.10f),
                     blurRadius = 28.dp,
                     noiseFactor = 0.04f,
                 ),
