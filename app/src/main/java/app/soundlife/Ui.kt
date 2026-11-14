@@ -182,10 +182,10 @@ internal fun fmt(ms: Long): String {
     return "%d:%02d".format(s / 60, s % 60)
 }
 
-@Composable
 /** Состояние стекла: содержимое экрана, которое размывается под мини-плеером. */
 internal val GlassState = HazeState()
 
+@Composable
 internal fun MiniPlayer(ps: PlayerUi, c: MediaController, onOpen: () -> Unit) {
     val coverArgbNow by produceState<Long?>(null, ps.artUrl) {
         value = null
