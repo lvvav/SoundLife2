@@ -2,6 +2,8 @@ package app.soundlife
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -164,7 +166,18 @@ internal fun MiniPlayer(ps: PlayerUi, c: MediaController, onOpen: () -> Unit) {
             progress = { progress },
             modifier = Modifier.fillMaxWidth().height(2.dp), color = Acc, trackColor = Color(0x22FFFFFF),
         )
-        Row(Modifier.clickable(onClick = onOpen).padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        var swipe by remember { mutableFloatStateOf(0f) }
+        Row(
+            Modifier.clickable(onClick = onOpen)
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { swipe = 0f },
+                        onDragEnd = { if (swipe > 120f) c.seekToPrevious() else if (swipe < -120f) c.seekToNext() },
+                    ) { _, d -> swipe += d }
+                }
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Box(Modifier.size(44.dp).clip(RoundedCornerShape(8.dp))) { Cover(ps.title.ifEmpty { "?" }, 44.dp, square = true, img = ps.artUrl) }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {

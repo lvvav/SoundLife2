@@ -774,6 +774,7 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 12.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("Медиатека", color = TextC, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.6).sp, modifier = Modifier.weight(1f))
+            IconButton(onClick = { showNew = true }) { Icon(Icons.Filled.Add, "Новый плейлист", tint = TextC) }
             IconButton(onClick = { grid = !grid }) { Icon(if (grid) Icons.AutoMirrored.Filled.List else Icons.Filled.GridView, "Вид", tint = Mut) }
             IconButton(onClick = onSettings) { Icon(Icons.Filled.Settings, "Настройки", tint = Mut) }
         }
@@ -1068,6 +1069,17 @@ private fun DetailScreen(d: Detail, cat: Catalog, ps: PlayerUi, c: MediaControll
             item {
                 LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(artistAlbums, key = { it.name }) { a -> AlbumCard(a) { onOpen(Detail.Album(a.name)) } }
+                }
+            }
+        }
+        if (d is Detail.Artist) {
+            val similar = cat.artists.filter { it.first != d.name }.take(10)
+            if (similar.isNotEmpty()) {
+                item { SectionTitle("Похожие исполнители") }
+                item {
+                    LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(similar, key = { it.first }) { a -> ArtistCard(a.first, artistImg(a.first, a.second)) { onOpen(Detail.Artist(a.first)) } }
+                    }
                 }
             }
         }
