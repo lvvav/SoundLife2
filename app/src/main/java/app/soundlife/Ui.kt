@@ -1,5 +1,8 @@
 package app.soundlife
 
+import app.soundlife.R
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.background
@@ -76,6 +79,26 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.fadeOut
 
+/** Шрифт Spotify Mix (файлы в res/font). */
+private val SpotifyFamily = FontFamily(
+    Font(R.font.spotify_mix_light, FontWeight.Light),
+    Font(R.font.spotify_mix_regular, FontWeight.Normal),
+    Font(R.font.spotify_mix_medium, FontWeight.Medium),
+    Font(R.font.spotify_mix_bold, FontWeight.Bold),
+    Font(R.font.spotify_mix_extrabold, FontWeight.ExtraBold),
+    Font(R.font.spotify_mix_black, FontWeight.Black),
+)
+private val SpotifyTypography: Typography = Typography().let { base ->
+    fun t(s: androidx.compose.ui.text.TextStyle) = s.copy(fontFamily = SpotifyFamily)
+    Typography(
+        displayLarge = t(base.displayLarge), displayMedium = t(base.displayMedium), displaySmall = t(base.displaySmall),
+        headlineLarge = t(base.headlineLarge), headlineMedium = t(base.headlineMedium), headlineSmall = t(base.headlineSmall),
+        titleLarge = t(base.titleLarge), titleMedium = t(base.titleMedium), titleSmall = t(base.titleSmall),
+        bodyLarge = t(base.bodyLarge), bodyMedium = t(base.bodyMedium), bodySmall = t(base.bodySmall),
+        labelLarge = t(base.labelLarge), labelMedium = t(base.labelMedium), labelSmall = t(base.labelSmall),
+    )
+}
+
 /**
  * Палитра: по умолчанию AMOLED-чёрный. Если на сайте выбран другой фон, цвета пересчитываются
  * так же, как applyTheme на сайте (светлый или тёмный фон, текст контрастный).
@@ -145,7 +168,7 @@ fun SoundLifeTheme(content: @Composable () -> Unit) {
             surface = Panel, onSurface = TextC, surfaceVariant = Hover, onSurfaceVariant = Mut, outline = Line,
         )
     }
-    MaterialTheme(colorScheme = scheme, content = content)
+    MaterialTheme(colorScheme = scheme, typography = SpotifyTypography, content = content)
 }
 
 internal fun fmt(ms: Long): String {
