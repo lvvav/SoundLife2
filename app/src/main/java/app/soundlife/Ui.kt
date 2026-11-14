@@ -1,5 +1,7 @@
 package app.soundlife
 
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -154,11 +156,17 @@ internal fun fmt(ms: Long): String {
 
 @Composable
 internal fun MiniPlayer(ps: PlayerUi, c: MediaController, onOpen: () -> Unit) {
-    val glassShape = RoundedCornerShape(14.dp)
+    val glassShape = RoundedCornerShape(22.dp)
+    val glassBrush = Brush.verticalGradient(
+        listOf(Color.White.copy(alpha = 0.14f), Color.White.copy(alpha = 0.05f)),
+    )
     Column(
-        Modifier.padding(horizontal = 12.dp, vertical = 8.dp).fillMaxWidth().clip(glassShape)
-            .background(Panel)
-            .border(1.dp, Line, glassShape),
+        Modifier.padding(horizontal = 12.dp, vertical = 8.dp).fillMaxWidth()
+            .shadow(16.dp, glassShape, clip = false)
+            .clip(glassShape)
+            .background(Panel.copy(alpha = 0.78f))
+            .background(glassBrush)
+            .border(1.dp, Color.White.copy(alpha = 0.12f), glassShape),
     ) {
         val target = if (ps.duration > 0) (ps.position.toFloat() / ps.duration).coerceIn(0f, 1f) else 0f
         val progress by androidx.compose.animation.core.animateFloatAsState(target, label = "miniProgress")
