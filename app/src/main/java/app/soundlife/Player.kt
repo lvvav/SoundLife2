@@ -1,5 +1,7 @@
 package app.soundlife
 
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -135,6 +137,12 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
             }
         }
         val album = c.mediaMetadata.albumTitle?.toString().orEmpty()
+        val coverArgb by produceState<Long?>(null, ps.artUrl) {
+            value = null
+            value = withContext(Dispatchers.IO) { coverAverage(ps.artUrl) }
+        }
+        val coverBg = coverArgb?.let { lerp(Color(it), Color.Black, 0.6f) }
+        val coverAcc = coverArgb?.let { lerp(Color(it), Color.White, 0.25f) }
         var speed by remember { mutableStateOf(1f) }
         var sleepMin by remember { mutableStateOf(0) }
         androidx.compose.runtime.LaunchedEffect(sleepMin) {
@@ -153,7 +161,10 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
             }
         }
         Column(
-            Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Panel, Bg, Bg))).windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 20.dp),
+            Modifier.fillMaxSize().background(
+                if (coverBg != null) Brush.verticalGradient(listOf(coverBg, Bg))
+                else Brush.verticalGradient(listOf(Panel, Bg, Bg)),
+            ).windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 20.dp),
         ) {
             // Верхняя строка: свернуть | «Из альбома» + название | меню
             Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -289,6 +300,14 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
                         shape = RoundedCornerShape(50), border = BorderStroke(1.dp, Line),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = TextC),
                     ) { Text("Скачать", fontSize = 13.sp) }
+                    OutlinedButton(
+                        onClick = {
+                            coverAcc?.let { Settings.setAccentArgb(0xFF000000L or (it and 0xFFFFFFL)) }
+                        },
+                        enabled = coverAcc != null,
+                        shape = RoundedCornerShape(50), border = BorderStroke(1.dp, Line),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextC),
+                    ) { Text("Тема по обложке", fontSize = 13.sp) }
                     OutlinedButton(
                         onClick = {
                             val text = "${ps.artist} — ${ps.title}"

@@ -196,6 +196,9 @@ object Settings {
     var mono by mutableStateOf(false)
         private set
     fun changeMono(v: Boolean) { mono = v; sp.edit().putBoolean(KEY_MONO, v).apply() }
+    /** Акцент из обложки: произвольный цвет, сохраняется. */
+    fun setAccentArgb(v: Long) { accentCustom = v; sp.edit().putLong("accent_custom", v).apply() }
+
     fun setAccent(i: Int) {
         accentIx = i
         accentCustom = null
