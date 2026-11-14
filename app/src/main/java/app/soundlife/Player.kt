@@ -1,5 +1,6 @@
 package app.soundlife
 
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -152,7 +153,7 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
             }
         }
         Column(
-            Modifier.fillMaxSize().background(Bg).windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 20.dp),
+            Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Panel, Bg, Bg))).windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 20.dp),
         ) {
             // Верхняя строка: свернуть | «Из альбома» + название | меню
             Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
