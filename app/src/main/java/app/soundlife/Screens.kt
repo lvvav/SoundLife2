@@ -519,7 +519,7 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
             item { SectionTitle("Артисты") }
             item {
                 LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(artists, key = { it.first }) { a -> ArtistCard(a.first, a.second.firstOrNull { it.img.isNotBlank() }?.img.orEmpty()) { onOpen(Detail.Artist(a.first)) } }
+                    items(artists, key = { it.first }) { a -> ArtistCard(a.first, artistImg(a.first, a.second)) { onOpen(Detail.Artist(a.first)) } }
                 }
             }
         }
@@ -694,7 +694,7 @@ private fun SearchScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen
             if (ar.isNotEmpty() && showL) {
                 item { SectionTitle("Артисты") }
                 items(ar, key = { "a:" + it.first }) { a ->
-                    LibRow(a.first, "Артист · ${plural(a.second.size)}", a.first, round = true, img = a.second.firstOrNull { it.img.isNotBlank() }?.img.orEmpty()) { onOpen(Detail.Artist(a.first)) }
+                    LibRow(a.first, "Артист · ${plural(a.second.size)}", a.first, round = true, img = artistImg(a.first, a.second)) { onOpen(Detail.Artist(a.first)) }
                 }
             }
             if (al.isNotEmpty() && showL) {
@@ -848,7 +848,7 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
                 LibRow(s.title, "Исполнитель · Яндекс Музыка", s.title, round = true, img = s.img) { onOpen(Detail.YmArtistPage(s.id, s.title, s.img)) }
             }
             if (showAr) items(myArtists, key = { "a:" + it.first }) { a ->
-                LibRow(a.first, "Артист", a.first, round = true, img = a.second.firstOrNull { it.img.isNotBlank() }?.img.orEmpty()) { onOpen(Detail.Artist(a.first)) }
+                LibRow(a.first, "Артист", a.first, round = true, img = artistImg(a.first, a.second)) { onOpen(Detail.Artist(a.first)) }
             }
             if (empty) item {
                 Text(
@@ -1011,7 +1011,7 @@ private fun DetailScreen(d: Detail, cat: Catalog, ps: PlayerUi, c: MediaControll
                 }
                 if (d is Detail.Artist) {
                     // Страница исполнителя: большое фото на всю ширину, затемнение снизу
-                    val heroImg = info.tracks.firstOrNull { it.img.isNotBlank() }?.img.orEmpty()
+                    val heroImg = artistImg(d.name, info.tracks)
                     Box(Modifier.fillMaxWidth().height(300.dp).clip(RoundedCornerShape(16.dp))) {
                         if (heroImg.isNotBlank()) RemoteImage(heroImg, Modifier.fillMaxSize())
                         else Cover(info.seed, 300.dp, img = "")

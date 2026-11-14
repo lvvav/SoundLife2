@@ -40,6 +40,16 @@ private val NUM = Regex("^\\d{1,3}\\s*[.)\\-]\\s*")
 private val IMG_EXT = listOf("jpg", "jpeg", "png", "webp")
 private val COVER_NAMES = listOf("cover", "folder", "artwork")
 
+/** Фото артистов из meta.json «@artists» (как на сайте): ключ — имя артиста в нижнем регистре, значение — готовая ссылка. */
+internal object ArtistPhotos {
+    @Volatile var map: Map<String, String> = emptyMap()
+}
+
+/** Фото артиста: из meta.json (как на сайте), иначе картинка первого трека с обложкой. */
+internal fun artistImg(name: String, tracks: List<Track>): String =
+    ArtistPhotos.map[name.lowercase()].takeUnless { it.isNullOrBlank() }
+        ?: tracks.firstOrNull { it.img.isNotBlank() }?.img.orEmpty()
+
 /** Простой GET. Бросает исключение при ошибке. */
 internal fun httpGet(url: String, accept: String = "*/*"): String {
     val c = URL(url).openConnection() as HttpURLConnection
@@ -58,6 +68,7 @@ object Library {
         val repos = BuildConfig.GH_REPOS.split(',').map { it.trim() }.filter { it.isNotEmpty() }
         val byPath = LinkedHashMap<String, Track>()
         val meta = HashMap<String, JSONObject>()
+        val artistPhotos = HashMap<String, String>()
         var lastErr: Exception? = null
 
         for (rp in repos) {
@@ -81,6 +92,12 @@ object Library {
                 try {
                     val j = JSONObject(httpGet(rawUrl(rp, "$folder/meta.json"), "application/json"))
                     j.keys().forEach { k -> j.optJSONObject(k)?.let { meta[k] = it } }
+                    j.optJSONObject("@artists")?.let { ao ->
+                        ao.keys().forEach { k ->
+                            val img = ao.optJSONObject(k)?.optString("img").orEmpty()
+                            if (img.isNotBlank()) artistPhotos[k.lowercase()] = rawUrl(rp, img)
+                        }
+                    }
                 } catch (e: Exception) {
                     // meta.json не обязателен
                 }
@@ -88,6 +105,7 @@ object Library {
         }
 
         if (byPath.isEmpty()) throw (lastErr ?: RuntimeException("В хранилищах нет треков"))
+        ArtistPhotos.map = artistPhotos
 
         val enriched = Overrides.apply(Id3.enrich(ctx, byPath.values.toList()).map { it.withMeta(meta[it.path]) })
         return enriched
