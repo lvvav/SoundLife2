@@ -29,6 +29,7 @@ private fun fetchImage(url: String): ImageBitmap? = try {
 @Composable
 internal fun RemoteImage(url: String, modifier: Modifier) {
     val bmp by produceState<ImageBitmap?>(initialValue = imageCache.get(url), key1 = url) {
+        value = imageCache.get(url)
         if (value == null) value = withContext(Dispatchers.IO) { fetchImage(url) }
     }
     val b = bmp

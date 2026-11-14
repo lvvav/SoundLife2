@@ -93,6 +93,12 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
         val id = ps.mediaId ?: return@produceState
         value = withContext(Dispatchers.IO) { Lastfm.get(ps.artist, ps.title) }
     }
+    val coverArgb by produceState<Long?>(null, ps.artUrl) {
+        value = null
+        value = withContext(Dispatchers.IO) { coverAverage(ps.artUrl) }
+    }
+    val coverBg = coverArgb?.let { lerp(Color(it), Color.Black, 0.35f) }
+    val coverAcc = coverArgb?.let { lerp(Color(it), Color.White, 0.25f) }
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         val pctx = LocalContext.current
         if (showQueue) Dialog(onDismissRequest = { showQueue = false }) {
@@ -121,9 +127,24 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
         }
         if (showMenu) Dialog(onDismissRequest = { showMenu = false }) {
             val items: List<Pair<String, () -> Unit>> = listOf(
-                "Поделиться" to {
-                    pctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, "${ps.artist} — ${ps.title}"), "Поделиться"))
+                "Поделиться ссылкой" to {
+                    val id = ps.mediaId.orEmpty()
+                    val link = "https://lvvav.github.io/wavelab/#t=" + java.net.URLEncoder.encode(id, "UTF-8").replace("+", "%20")
+                    pctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, "${ps.artist} — ${ps.title}\n$link"), "Поделиться"))
                 },
+                "Скачать" to {
+                    val id = ps.mediaId
+                    val repo = BuildConfig.GH_REPOS.split(',').map { it.trim() }.firstOrNull { it.isNotEmpty() }
+                    if (id != null && repo != null) {
+                        val req = android.app.DownloadManager.Request(android.net.Uri.parse(Library.rawUrl(repo, id)))
+                            .setTitle(ps.title)
+                            .setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                            .setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_MUSIC, "SoundLife/" + id.substringAfterLast('/'))
+                        (pctx.getSystemService(android.content.Context.DOWNLOAD_SERVICE) as android.app.DownloadManager).enqueue(req)
+                        android.widget.Toast.makeText(pctx, "Скачивание начато", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                },
+                "Тема по обложке" to { coverAcc?.let { Settings.setAccentArgb(0xFF000000L or (it.toArgb().toLong() and 0xFFFFFFL)) } },
                 (if (Favorites.has(ps.mediaId)) "Убрать из любимого" else "Добавить в любимое") to { ps.mediaId?.let { Favorites.toggle(it) } },
                 "Очередь" to { showQueue = true },
                 "Добавить в плейлист" to { Playlists.pendingTrack = ps.mediaId },
@@ -138,12 +159,6 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
             }
         }
         val album = c.mediaMetadata.albumTitle?.toString().orEmpty()
-        val coverArgb by produceState<Long?>(null, ps.artUrl) {
-            value = null
-            value = withContext(Dispatchers.IO) { coverAverage(ps.artUrl) }
-        }
-        val coverBg = coverArgb?.let { lerp(Color(it), Color.Black, 0.35f) }
-        val coverAcc = coverArgb?.let { lerp(Color(it), Color.White, 0.25f) }
         var speed by remember { mutableStateOf(1f) }
         var sleepMin by remember { mutableStateOf(0) }
         androidx.compose.runtime.LaunchedEffect(sleepMin) {
@@ -271,54 +286,6 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
                 }
 
                 // Кнопки: скорость, таймер сна, скачать, поделиться
-                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(
-                        onClick = {
-                            speed = when (speed) { 1f -> 1.25f; 1.25f -> 1.5f; 1.5f -> 2f; else -> 1f }
-                            c.setPlaybackSpeed(speed)
-                        },
-                        shape = RoundedCornerShape(50), border = BorderStroke(1.dp, Line),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextC),
-                    ) { Text(if (speed == 1f) "1×" else "${speed}×", fontSize = 13.sp) }
-                    OutlinedButton(
-                        onClick = { sleepMin = when (sleepMin) { 0 -> 15; 15 -> 30; 30 -> 60; else -> 0 } },
-                        shape = RoundedCornerShape(50), border = BorderStroke(1.dp, Line),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextC),
-                    ) { Text(if (sleepMin == 0) "Таймер сна" else "Сон через $sleepMin мин", fontSize = 13.sp) }
-                    OutlinedButton(
-                        onClick = {
-                            val id = ps.mediaId
-                            val repo = BuildConfig.GH_REPOS.split(',').map { it.trim() }.firstOrNull { it.isNotEmpty() }
-                            if (id != null && repo != null) {
-                                val req = android.app.DownloadManager.Request(android.net.Uri.parse(Library.rawUrl(repo, id)))
-                                    .setTitle(ps.title)
-                                    .setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                                    .setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_MUSIC, "SoundLife/" + id.substringAfterLast('/'))
-                                (pctx.getSystemService(android.content.Context.DOWNLOAD_SERVICE) as android.app.DownloadManager).enqueue(req)
-                                android.widget.Toast.makeText(pctx, "Скачивание начато", android.widget.Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        shape = RoundedCornerShape(50), border = BorderStroke(1.dp, Line),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextC),
-                    ) { Text("Скачать", fontSize = 13.sp) }
-                    OutlinedButton(
-                        onClick = {
-                            coverAcc?.let { Settings.setAccentArgb(0xFF000000L or (it.toArgb().toLong() and 0xFFFFFFL)) }
-                        },
-                        enabled = coverAcc != null,
-                        shape = RoundedCornerShape(50), border = BorderStroke(1.dp, Line),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextC),
-                    ) { Text("Тема по обложке", fontSize = 13.sp) }
-                    OutlinedButton(
-                        onClick = {
-                            val text = "${ps.artist} — ${ps.title}"
-                            pctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), "Поделиться"))
-                        },
-                        shape = RoundedCornerShape(50), border = BorderStroke(1.dp, Line),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextC),
-                    ) { Text("Поделиться", fontSize = 13.sp) }
-                }
-
                 // Текст песни
                 if (!showLy) {
                     Spacer(Modifier.height(16.dp))
