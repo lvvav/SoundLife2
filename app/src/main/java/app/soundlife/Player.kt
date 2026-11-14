@@ -142,7 +142,7 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
             value = null
             value = withContext(Dispatchers.IO) { coverAverage(ps.artUrl) }
         }
-        val coverBg = coverArgb?.let { lerp(Color(it), Color.Black, 0.6f) }
+        val coverBg = coverArgb?.let { lerp(Color(it), Color.Black, 0.35f) }
         val coverAcc = coverArgb?.let { lerp(Color(it), Color.White, 0.25f) }
         var speed by remember { mutableStateOf(1f) }
         var sleepMin by remember { mutableStateOf(0) }

@@ -5,6 +5,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -198,7 +199,7 @@ internal fun MiniPlayer(ps: PlayerUi, c: MediaController, onOpen: () -> Unit) {
         Modifier.padding(horizontal = 12.dp, vertical = 8.dp).fillMaxWidth()
             .shadow(16.dp, glassShape, clip = false)
             .clip(glassShape)
-            .background(Panel.copy(alpha = 0.78f))
+            .background(if (Settings.accentFromCover && coverArgbNow != null) Color(lerp(Color(coverArgbNow!!), Color.Black, 0.45f).toArgb()) else Panel.copy(alpha = 0.78f))
             .background(glassBrush)
             .border(1.dp, Color.White.copy(alpha = 0.12f), glassShape),
     ) {

@@ -1019,11 +1019,18 @@ private fun DetailScreen(d: Detail, cat: Catalog, ps: PlayerUi, c: MediaControll
                 Spacer(Modifier.height(14.dp))
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     if (info.followed != null) {
-                        OutlinedButton(
-                            onClick = info.onFollow, shape = RoundedCornerShape(50),
-                            border = BorderStroke(1.dp, if (info.followed) Acc else Line),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = if (info.followed) Acc else TextC),
-                        ) { Text(if (info.followed) "Вы подписаны" else "Подписаться", fontWeight = FontWeight.SemiBold) }
+                        Box(
+                            Modifier.size(44.dp).clip(CircleShape).border(1.dp, if (info.followed) Acc else Line, CircleShape)
+                                .clickable(onClick = info.onFollow),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                if (info.followed) Icons.Filled.Check else Icons.Filled.Add,
+                                if (info.followed) "Вы подписаны" else "Подписаться",
+                                tint = if (info.followed) Acc else TextC,
+                                modifier = Modifier.size(22.dp),
+                            )
+                        }
                     }
                     if (d is Detail.Playlist) {
                         val pub = PubPlaylists.isPublic(d.name)
@@ -1398,13 +1405,18 @@ private fun YmDetailScreen(d: Detail, ps: PlayerUi, c: MediaController?, onBack:
                 Spacer(Modifier.height(12.dp))
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     val subbed = Subs.isYm(kind, id)
-                    OutlinedButton(
-                        onClick = {
-                            Subs.toggleYm(YmSub(kind, id, title, if (d is Detail.YmAlbumPage) d.artist else "", img))
-                        },
-                        border = BorderStroke(1.dp, if (subbed) Acc else Line),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = if (subbed) Acc else TextC),
-                    ) { Text(if (subbed) "Вы подписаны" else "Подписаться") }
+                    Box(
+                        Modifier.size(44.dp).clip(CircleShape).border(1.dp, if (subbed) Acc else Line, CircleShape)
+                            .clickable { Subs.toggleYm(YmSub(kind, id, title, if (d is Detail.YmAlbumPage) d.artist else "", img)) },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            if (subbed) Icons.Filled.Check else Icons.Filled.Add,
+                            if (subbed) "Вы подписаны" else "Подписаться",
+                            tint = if (subbed) Acc else TextC,
+                            modifier = Modifier.size(22.dp),
+                        )
+                    }
                     Spacer(Modifier.weight(1f))
                     Box(
                         Modifier.size(52.dp).clip(CircleShape).background(Acc)
