@@ -259,7 +259,9 @@ internal fun MiniPlayer(ps: PlayerUi, c: MediaController, onOpen: () -> Unit) {
                 }
             }
             IconButton(onClick = { c.seekToNext() }) { Icon(Icons.Default.SkipNext, "Далее", tint = TextC) }
-        }}
+        }
+    }
+}
 
 /** Состояние плеера для интерфейса. */
 class PlayerUi {
