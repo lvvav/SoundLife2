@@ -1,5 +1,6 @@
 package app.soundlife
 
+import androidx.compose.foundation.border
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import kotlinx.coroutines.delay
@@ -495,7 +496,8 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
             item { SeeAllHeader("Артисты") { showAllArtists = true } }
             item {
                 LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    items(artists.take(12), key = { it.first }) { a -> ArtistCard(a.first, artistImg(a.first, a.second)) { onOpen(Detail.Artist(a.first)) } }
+                    items(artists.take(3), key = { it.first }) { a -> ArtistCard(a.first, artistImg(a.first, a.second)) { onOpen(Detail.Artist(a.first)) } }
+                    item { SeeAllCard(round = true) { showAllArtists = true } }
                 }
             }
         }
@@ -503,7 +505,8 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
             item { SeeAllHeader("Альбомы") { showAllAlbums = true } }
             item {
                 LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    items(albums.take(12), key = { it.name }) { a -> AlbumCard(a) { onOpen(Detail.Album(a.name)) } }
+                    items(albums.take(3), key = { it.name }) { a -> AlbumCard(a) { onOpen(Detail.Album(a.name)) } }
+                    item { SeeAllCard(round = false) { showAllAlbums = true } }
                 }
             }
         }
@@ -540,6 +543,21 @@ private fun ArtistCard(name: String, img: String, onClick: () -> Unit) {
         }
         Spacer(Modifier.height(8.dp))
         Text(name, color = TextC, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+    }
+}
+
+@Composable
+private fun SeeAllCard(round: Boolean, onClick: () -> Unit) {
+    val shape = if (round) CircleShape else RoundedCornerShape(8.dp)
+    Column(Modifier.width(116.dp).clickable(onClick = onClick), horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            Modifier.size(116.dp).clip(shape).background(Hover).border(1.dp, Line, shape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text("Все", color = TextC, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
+        }
+        Spacer(Modifier.height(8.dp))
+        Text("Показать всё", color = Mut, fontSize = 13.sp, maxLines = 1)
     }
 }
 
