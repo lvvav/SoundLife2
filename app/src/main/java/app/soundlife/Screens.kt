@@ -420,17 +420,11 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
     var homeTab by rememberSaveable { mutableIntStateOf(0) }
     LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
         item {
-            Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 12.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 12.dp, end = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                // Одна кнопка: аватарка аккаунта открывает меню (настройки и профиль внутри)
+                Box(Modifier.size(40.dp).clip(CircleShape).clickable { onMenu() }) { AvatarCircle(Profile.avatar, 40.dp) }
+                Spacer(Modifier.width(12.dp))
                 Text(hello, color = TextC, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                Row(
-                    Modifier.clip(RoundedCornerShape(50)).background(Hover).clickable { onMenu() }.padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(Icons.Filled.Menu, "Меню", tint = TextC, modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Меню", color = TextC, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                }
-                IconButton(onClick = onSettings) { Icon(Icons.Filled.Settings, "Настройки", tint = Mut) }
             }
         }
         item {
