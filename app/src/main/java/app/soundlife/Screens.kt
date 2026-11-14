@@ -254,7 +254,7 @@ fun SoundLifeApp(controller: MediaController?) {
         drawerContent = {
             ModalDrawerSheet(modifier = Modifier.width(300.dp), drawerContainerColor = Bg) {
                 val nickText = Profile.nick.ifEmpty { "SoundLife" }
-                val openProfile = {
+                val openProfile: () -> Unit = {
                     drawerScope.launch { drawer.close() }
                     Auth.userId()?.let { detail = Detail.User(it, Profile.nick) }
                 }
