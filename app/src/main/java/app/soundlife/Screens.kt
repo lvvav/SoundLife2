@@ -650,7 +650,7 @@ private fun SearchScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen
             return@Column
         }
         LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            itemsIndexed(listOf("Все", "Медиатека", "iTunes", "Яндекс")) { i, label ->
+            itemsIndexed(listOf("Все", "GitHub", "iTunes", "Яндекс")) { i, label ->
                 FilterChip(
                     selected = srcTab == i, onClick = { srcTab = i }, label = { Text(label) },
                     colors = FilterChipDefaults.filterChipColors(containerColor = Hover, labelColor = TextC, selectedContainerColor = Acc, selectedLabelColor = OnAcc),
