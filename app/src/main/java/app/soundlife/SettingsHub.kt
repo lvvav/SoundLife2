@@ -155,6 +155,13 @@ private fun PlayPage() {
                 Settings.mix,
             ) { Settings.changeMix(it) }
         }
+        item {
+            ToggleRow(
+                "Моно-звук",
+                "Левый и правый канал смешиваются — удобно, когда слушаешь одним наушником",
+                Settings.mono,
+            ) { Settings.changeMono(it) }
+        }
     }
 }
 

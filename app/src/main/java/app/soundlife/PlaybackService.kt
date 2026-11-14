@@ -13,6 +13,12 @@ import java.io.IOException
 import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.media3.common.AudioAttributes
+import android.content.Context
+import androidx.media3.common.audio.ChannelMixingAudioProcessor
+import androidx.media3.common.audio.ChannelMixingMatrix
+import androidx.media3.exoplayer.DefaultRenderersFactory
+import androidx.media3.exoplayer.audio.AudioSink
+import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
@@ -35,6 +41,24 @@ val CMD_SHUFFLE = SessionCommand("app.soundlife.SHUFFLE", Bundle.EMPTY)
  * Тумблер «поверх других приложений» отключает захват аудиофокуса.
  */
 class PlaybackService : MediaSessionService() {
+    /** Смешивание каналов для моно-звука. */
+    private val monoMixer = ChannelMixingAudioProcessor()
+
+    private fun applyMono() {
+        val m = if (Settings.mono) ChannelMixingMatrix(2, 2, floatArrayOf(0.5f, 0.5f, 0.5f, 0.5f))
+        else ChannelMixingMatrix(2, 2, floatArrayOf(1f, 0f, 0f, 1f))
+        monoMixer.putChannelMixingMatrix(m)
+    }
+
+    /** Рендереры с нашим процессором звука (вставляется в цепочку вывода). */
+    private class MonoRenderers(ctx: Context, private val mixer: ChannelMixingAudioProcessor) : DefaultRenderersFactory(ctx) {
+        override fun buildAudioSink(context: Context, enableFloatOutput: Boolean, enableAudioTrackPlaybackParams: Boolean): AudioSink =
+            DefaultAudioSink.Builder(context)
+                .setAudioProcessorChain(DefaultAudioSink.DefaultAudioProcessorChain(mixer))
+                .setEnableFloatOutput(enableFloatOutput)
+                .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
+                .build()
+    }
     private var session: MediaSession? = null
     private lateinit var player: ExoPlayer
     private val main = Handler(Looper.getMainLooper())
@@ -62,6 +86,10 @@ class PlaybackService : MediaSessionService() {
         if (key == Settings.KEY_MIX) {
             Settings.init(this)
             applyFocus()
+        }
+        if (key == Settings.KEY_MONO) {
+            Settings.init(this)
+            applyMono()
         }
     }
 
@@ -97,11 +125,13 @@ class PlaybackService : MediaSessionService() {
         Stats.init(this)
         main.post(ticker)
         player = ExoPlayer.Builder(this)
+            .setRenderersFactory(MonoRenderers(this, monoMixer))
             .setHandleAudioBecomingNoisy(true)
             .setWakeMode(C.WAKE_MODE_NETWORK)
             .setMediaSourceFactory(DefaultMediaSourceFactory(ymDataFactory(this)))
             .build()
         applyFocus()
+        applyMono()
         player.repeatMode = Player.REPEAT_MODE_ALL
         player.addListener(object : Player.Listener {
             override fun onMediaItemTransition(item: MediaItem?, reason: Int) {

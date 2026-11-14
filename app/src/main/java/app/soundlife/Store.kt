@@ -168,6 +168,7 @@ object Settings {
     fun init(ctx: Context) {
         val p = prefs(ctx)
         mix = p.getBoolean(KEY_MIX, false)
+        mono = p.getBoolean(KEY_MONO, false)
         accentIx = p.getInt(KEY_ACCENT, 0).coerceIn(0, ACCENTS.lastIndex)
         accentCustom = p.getLong("accent_custom", -1L).takeIf { it != -1L }
         siteT = p.getLong("site_set_t", 0L)
@@ -190,6 +191,11 @@ object Settings {
         setAnimOn(true)
     }
     fun changeMix(v: Boolean) { mix = v; sp.edit().putBoolean(KEY_MIX, v).apply() }
+    /** Моно-звук: левый и правый канал смешиваются в один (для одного наушника). */
+    const val KEY_MONO = "f_mono"
+    var mono by mutableStateOf(false)
+        private set
+    fun changeMono(v: Boolean) { mono = v; sp.edit().putBoolean(KEY_MONO, v).apply() }
     fun setAccent(i: Int) {
         accentIx = i
         accentCustom = null
