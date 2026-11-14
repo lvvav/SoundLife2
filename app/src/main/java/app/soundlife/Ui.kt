@@ -87,9 +87,9 @@ object Palette {
     var mut by mutableStateOf(Color(0xFF8B8B99)); private set
     var dark by mutableStateOf(true); private set
 
-    /** argb — фон сайта, например 0xFF000000. */
+    /** argb — фон сайта, по умолчанию тёмно-серый #0d0d11. */
     fun set(_input: Long) {
-        val argb = 0xFF000000L // OLED всегда, отключить нельзя
+        val argb = if (_input == 0L) 0xFF0D0D11L else _input // фон как на сайте (#0d0d11), по умолчанию
         val r = ((argb shr 16) and 0xFF).toInt()
         val g = ((argb shr 8) and 0xFF).toInt()
         val b = (argb and 0xFF).toInt()

@@ -172,7 +172,7 @@ object Settings {
         accentIx = p.getInt(KEY_ACCENT, 0).coerceIn(0, ACCENTS.lastIndex)
         accentCustom = p.getLong("accent_custom", -1L).takeIf { it != -1L }
         siteT = p.getLong("site_set_t", 0L)
-        Palette.set(p.getLong("site_bg", 0xFF000000L))
+        Palette.set(p.getLong("site_bg", 0xFF0D0D11L))
         anim = p.getBoolean("f_anim", true)
         adminOn = p.getBoolean("f_admin", false)
     }
