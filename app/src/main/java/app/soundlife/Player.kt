@@ -99,7 +99,8 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
             Column(Modifier.fillMaxSize().background(Bg).windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 16.dp)) {
                 Text("Очередь", color = TextC, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 12.dp, bottom = 8.dp))
                 LazyColumn(Modifier.fillMaxSize()) {
-                    items(rows, key = { it.first }) { (i, item) ->
+                    items(rows.size, key = { rows[it].first }) { idx ->
+                        val (i, item) = rows[idx]
                         val m = item.mediaMetadata
                         Row(
                             Modifier.fillMaxWidth().clickable { c.seekTo(i, 0L); c.play(); showQueue = false }.padding(vertical = 10.dp),
