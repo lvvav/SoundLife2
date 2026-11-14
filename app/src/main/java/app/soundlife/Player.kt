@@ -75,6 +75,7 @@ import androidx.compose.animation.fadeOut
 internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
     var showLy by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
+    var showQueue by remember { mutableStateOf(false) }
     // (загружено, результат): грузим при смене трека
     val lyrs by produceState<Pair<Boolean, Lyrics.Result?>>(false to null, ps.mediaId) {
         value = false to null
@@ -90,12 +91,36 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
     }
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         val pctx = LocalContext.current
+        if (showQueue) Dialog(onDismissRequest = { showQueue = false }) {
+            // Очередь: текущий трек и все следующие, по нажатию запускаем с этого места
+            val rows = remember(ps.mediaId) {
+                (c.currentMediaItemIndex until c.mediaItemCount).map { i -> i to c.getMediaItemAt(i) }
+            }
+            Column(Modifier.fillMaxSize().background(Bg).windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 16.dp)) {
+                Text("Очередь", color = TextC, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 12.dp, bottom = 8.dp))
+                LazyColumn(Modifier.fillMaxSize()) {
+                    items(rows, key = { it.first }) { (i, item) ->
+                        val m = item.mediaMetadata
+                        Row(
+                            Modifier.fillMaxWidth().clickable { c.seekTo(i, 0L); c.play(); showQueue = false }.padding(vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text(m.title?.toString().orEmpty(), color = if (i == c.currentMediaItemIndex) Acc else TextC, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(m.artist?.toString().orEmpty(), color = Mut, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                        }
+                    }
+                }
+            }
+        }
         if (showMenu) Dialog(onDismissRequest = { showMenu = false }) {
             val items: List<Pair<String, () -> Unit>> = listOf(
                 "Поделиться" to {
                     pctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, "${ps.artist} — ${ps.title}"), "Поделиться"))
                 },
                 (if (Favorites.has(ps.mediaId)) "Убрать из любимого" else "Добавить в любимое") to { ps.mediaId?.let { Favorites.toggle(it) } },
+                "Очередь" to { showQueue = true },
                 "Добавить в плейлист" to { Playlists.pendingTrack = ps.mediaId },
             )
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Panel).padding(vertical = 8.dp)) {
