@@ -49,3 +49,12 @@ internal fun coverAverage(url: String): Long? {
     }
     return 0xFF000000L or ((r / n) shl 16) or ((g / n) shl 8) or (b / n)
 }
+
+/** Насыщенный вариант цвета обложки для акцента: не тусклый, яркий. */
+internal fun vivid(argb: Long): Long {
+    val hsv = FloatArray(3)
+    android.graphics.Color.RGBToHSV(((argb shr 16) and 0xFF).toInt(), ((argb shr 8) and 0xFF).toInt(), (argb and 0xFF).toInt(), hsv)
+    hsv[1] = maxOf(hsv[1], 0.75f)
+    hsv[2] = maxOf(hsv[2], 0.95f)
+    return 0xFF000000L or (android.graphics.Color.HSVToColor(hsv).toLong() and 0xFFFFFFL)
+}

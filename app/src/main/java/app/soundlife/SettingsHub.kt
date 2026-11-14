@@ -21,6 +21,14 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.NewReleases
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -111,25 +119,25 @@ private fun HubMain(onAccount: () -> Unit, onPage: (String) -> Unit, onUpdates: 
         ),
         "Воспроизведение" to listOf(
             HubItem("Воспроизведение", if (Settings.mix) "Смешивать с другими приложениями" else "Обычное", Icons.Filled.PlayArrow) { onPage("play") },
-            HubItem("Трафик и офлайн-режим", "Офлайн-память и экономия трафика", Icons.Filled.Refresh) { onPage("traffic") },
-            HubItem("Качество медиафайлов", "Исходное качество, без сжатия", Icons.Filled.Info) { onPage("quality") },
+            HubItem("Трафик и офлайн-режим", "Офлайн-память и экономия трафика", Icons.Filled.LibraryMusic) { onPage("traffic") },
+            HubItem("Качество медиафайлов", "Исходное качество, без сжатия", Icons.Filled.Settings) { onPage("quality") },
         ),
         "Связь" to listOf(
             HubItem("Уведомления", "Сообщения и звонки: $notifState", Icons.Filled.Notifications) { onPage("notif") },
-            HubItem("Конфиденциальность и приватность", "Медиатека и «что я слушаю»", Icons.Filled.Person) { onPage("privacy") },
-            HubItem("Устройства и «Слушать вместе»", "Комнаты и вход по коду", Icons.Filled.Build) { onPage("devices") },
+            HubItem("Конфиденциальность и приватность", "Медиатека и «что я слушаю»", Icons.Filled.Check) { onPage("privacy") },
+            HubItem("Устройства и «Слушать вместе»", "Комнаты и вход по коду", Icons.Filled.Group) { onPage("devices") },
         ),
         "Обслуживание" to listOf(
-            HubItem("Обновления", "Что нового в приложении", Icons.Filled.Refresh, onUpdates),
+            HubItem("Обновления", "Что нового в приложении", Icons.Filled.NewReleases, onUpdates),
             HubItem("Проверить обновление", "Скачать и установить без выхода", Icons.Filled.Refresh) {
                 scope.launch { checkForUpdateNow(ctx) }
             },
             HubItem("Информация и поддержка", "О сайте, горячие клавиши, версия", Icons.Filled.Info, onInfo),
-            HubItem("Сброс настроек", "Вернуть всё по умолчанию", Icons.Filled.Refresh) { onPage("reset") },
+            HubItem("Сброс настроек", "Вернуть всё по умолчанию", Icons.Filled.Close) { onPage("reset") },
             HubItem("Для разработчиков", if (Settings.adminOn) "Админ-панель включена" else "Выключено", Icons.Filled.Build) { onPage("dev") },
         ),
     )
-    LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
+    LazyColumn(Modifier.navigationBarsPadding(), contentPadding = PaddingValues(bottom = 24.dp)) {
         groups.forEach { (label, rows) ->
             item(key = "h_$label") { SubHeader(label) }
             items(rows, key = { it.title }) { it ->
@@ -176,7 +184,7 @@ private fun LookPage() {
         "Светлая" to 0xFFF5F5F7L,
     )
     var themeIx by remember { mutableStateOf(0) }
-    LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
+    LazyColumn(Modifier.navigationBarsPadding(), contentPadding = PaddingValues(bottom = 24.dp)) {
         item { SubHeader("Тема") }
         item {
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -218,7 +226,7 @@ private fun LookPage() {
 
 @Composable
 private fun PlayPage() {
-    LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
+    LazyColumn(Modifier.navigationBarsPadding(), contentPadding = PaddingValues(bottom = 24.dp)) {
         item {
             ToggleRow(
                 "Смешивать с другими приложениями",

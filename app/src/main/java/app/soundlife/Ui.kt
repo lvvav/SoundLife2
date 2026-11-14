@@ -195,7 +195,7 @@ internal fun MiniPlayer(ps: PlayerUi, c: MediaController, onOpen: () -> Unit) {
     LaunchedEffect(coverArgbNow) {
         val v = coverArgbNow
         if (Settings.accentFromCover && v != null) {
-            Settings.setAccentArgb(0xFF000000L or (androidx.compose.ui.graphics.lerp(Color(v), Color.White, 0.25f).toArgb().toLong() and 0xFFFFFFL))
+            Settings.setAccentArgb(vivid(v))
         }
     }
     val glassShape = RoundedCornerShape(22.dp)

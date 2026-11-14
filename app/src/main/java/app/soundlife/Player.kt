@@ -144,7 +144,7 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
                         android.widget.Toast.makeText(pctx, "Скачивание начато", android.widget.Toast.LENGTH_SHORT).show()
                     }
                 },
-                "Тема по обложке" to { coverAcc?.let { Settings.setAccentArgb(0xFF000000L or (it.toArgb().toLong() and 0xFFFFFFL)) } },
+                "Тема по обложке" to { coverArgb?.let { Settings.setAccentArgb(vivid(it)) } },
                 (if (Favorites.has(ps.mediaId)) "Убрать из любимого" else "Добавить в любимое") to { ps.mediaId?.let { Favorites.toggle(it) } },
                 "Очередь" to { showQueue = true },
                 "Добавить в плейлист" to { Playlists.pendingTrack = ps.mediaId },
