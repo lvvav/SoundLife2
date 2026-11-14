@@ -172,7 +172,7 @@ object Settings {
         accentIx = p.getInt(KEY_ACCENT, 0).coerceIn(0, ACCENTS.lastIndex)
         accentCustom = p.getLong("accent_custom", -1L).takeIf { it != -1L }
         siteT = p.getLong("site_set_t", 0L)
-        Palette.set(p.getLong("site_bg", 0xFF0D0D11L))
+        Palette.set(0xFF121212L)
         anim = p.getBoolean("f_anim", true)
         adminOn = p.getBoolean("f_admin", false)
     }
@@ -208,7 +208,6 @@ object Settings {
         siteT = t
         val e = sp.edit().putLong("site_set_t", t)
         parseHex(acc)?.let { accentCustom = it; e.putLong("accent_custom", it) }
-        parseHex(bg)?.let { Palette.set(it); e.putLong("site_bg", it) }
         e.apply()
     }
 

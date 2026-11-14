@@ -79,17 +79,17 @@ import androidx.compose.animation.fadeOut
  * так же, как applyTheme на сайте (светлый или тёмный фон, текст контрастный).
  */
 object Palette {
-    var bg by mutableStateOf(Color(0xFF0D0D11)); private set
-    var panel by mutableStateOf(Color(0xFF121217)); private set
-    var hover by mutableStateOf(Color(0xFF18181F)); private set
-    var line by mutableStateOf(Color(0xFF23232C)); private set
+    var bg by mutableStateOf(Color(0xFF121212)); private set
+    var panel by mutableStateOf(Color(0xFF181818)); private set
+    var hover by mutableStateOf(Color(0xFF282828)); private set
+    var line by mutableStateOf(Color(0xFF282828)); private set
     var text by mutableStateOf(Color(0xFFECECF1)); private set
     var mut by mutableStateOf(Color(0xFF8B8B99)); private set
     var dark by mutableStateOf(true); private set
 
     /** argb — фон сайта, по умолчанию тёмно-серый #0d0d11. */
     fun set(_input: Long) {
-        val argb = if (_input == 0L) 0xFF0D0D11L else _input // фон как на сайте (#0d0d11), по умолчанию
+        val argb = 0xFF121212L // фон как в Spotify (#121212), сайтовый фон не применяем
         val r = ((argb shr 16) and 0xFF).toInt()
         val g = ((argb shr 8) and 0xFF).toInt()
         val b = (argb and 0xFF).toInt()

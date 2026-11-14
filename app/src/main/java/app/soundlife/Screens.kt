@@ -420,17 +420,6 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
                 Text(hello, color = TextC, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
             }
         }
-        item {
-            LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                itemsIndexed(listOf("Все", "Артисты", "Альбомы", "Треки")) { i, label ->
-                    FilterChip(
-                        selected = homeTab == i, onClick = { homeTab = i }, label = { Text(label) },
-                        colors = FilterChipDefaults.filterChipColors(containerColor = Hover, labelColor = TextC, selectedContainerColor = Acc, selectedLabelColor = OnAcc),
-                        border = null,
-                    )
-                }
-            }
-        }
         if (homeTab == 0) item {
             val hrs = remember { String.format(java.util.Locale.US, "%.1f", Stats.totalHours()) }
             Box(
