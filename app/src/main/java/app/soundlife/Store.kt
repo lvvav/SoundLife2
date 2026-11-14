@@ -202,7 +202,7 @@ object Settings {
 
     /** Тема по обложке: при смене трека акцент берётся из обложки сам. */
     var accentFromCover by mutableStateOf(false)
-    fun setAccentFromCover(v: Boolean) { accentFromCover = v; sp.edit().putBoolean("accent_from_cover", v).apply() }
+    fun setAutoCover(v: Boolean) { accentFromCover = v; sp.edit().putBoolean("accent_from_cover", v).apply() }
 
     fun setAccent(i: Int) {
         accentIx = i

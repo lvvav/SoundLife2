@@ -197,7 +197,7 @@ private fun LookPage() {
             }
         }
         item {
-            ToggleRow("Тема по обложке", "Акцент сам меняется под обложку играющего трека", Settings.accentFromCover) { Settings.setAccentFromCover(it) }
+            ToggleRow("Тема по обложке", "Акцент сам меняется под обложку играющего трека", Settings.accentFromCover) { Settings.setAutoCover(it) }
         }
         item { SubHeader("Цвет акцента") }
         itemsIndexed(ACCENTS) { i, (argb, name) ->
