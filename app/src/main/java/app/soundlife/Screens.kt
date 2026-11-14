@@ -362,7 +362,7 @@ fun SoundLifeApp(controller: MediaController?) {
         }
     }
     }
-    if (showFull && controller != null) FullPlayer(ps, controller) { showFull = false }
+    if (showFull && controller != null) FullPlayer(ps, controller, onClose = { showFull = false }, onOpenDetail = { d -> showFull = false; detail = d })
     if (showSettings) SettingsHub { showSettings = false }
     if (showStatsApp) StatsDialog { showStatsApp = false }
     if (showRecentApp) RecentDialog(readyTracks.orEmpty(), controller) { showRecentApp = false }

@@ -1,5 +1,9 @@
 package app.soundlife
 
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.foundation.layout.navigationBarsPadding
+
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.graphics.lerp
@@ -76,7 +80,8 @@ import androidx.compose.animation.fadeOut
 
 /** Экран плеера в стиле Spotify: большая обложка, под ней название, ползунок и кнопки. */
 @Composable
-internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
+@OptIn(ExperimentalMaterial3Api::class)
+internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit, onOpenDetail: (Detail) -> Unit = {}) {
     var showLy by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     var showQueue by remember { mutableStateOf(false) }
@@ -125,14 +130,19 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
                 }
             }
         }
-        if (showMenu) Dialog(onDismissRequest = { showMenu = false }) {
-            val items: List<Pair<String, () -> Unit>> = listOf(
-                "Поделиться ссылкой" to {
+        val albumName = c.mediaMetadata.albumTitle?.toString().orEmpty()
+        if (showMenu) ModalBottomSheet(onDismissRequest = { showMenu = false }, containerColor = Panel) {
+            val rows: List<Pair<String, () -> Unit>> = buildList {
+                if (albumName.isNotBlank()) add("Перейти к альбому" to { showMenu = false; onClose(); onOpenDetail(Detail.Album(albumName)) })
+                if (ps.artist.isNotBlank()) add("Перейти к артисту" to { showMenu = false; onClose(); onOpenDetail(Detail.Artist(ps.artist)) })
+                add("Поделиться ссылкой" to {
+                    showMenu = false
                     val id = ps.mediaId.orEmpty()
                     val link = "https://lvvav.github.io/wavelab/#t=" + java.net.URLEncoder.encode(id, "UTF-8").replace("+", "%20")
                     pctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, "${ps.artist} — ${ps.title}\n$link"), "Поделиться"))
-                },
-                "Скачать" to {
+                })
+                add("Скачать" to {
+                    showMenu = false
                     val id = ps.mediaId
                     val repo = BuildConfig.GH_REPOS.split(',').map { it.trim() }.firstOrNull { it.isNotEmpty() }
                     if (id != null && repo != null) {
@@ -143,17 +153,17 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
                         (pctx.getSystemService(android.content.Context.DOWNLOAD_SERVICE) as android.app.DownloadManager).enqueue(req)
                         android.widget.Toast.makeText(pctx, "Скачивание начато", android.widget.Toast.LENGTH_SHORT).show()
                     }
-                },
-                "Тема по обложке" to { coverArgb?.let { Settings.setAccentArgb(vivid(it)) } },
-                (if (Favorites.has(ps.mediaId)) "Убрать из любимого" else "Добавить в любимое") to { ps.mediaId?.let { Favorites.toggle(it) } },
-                "Очередь" to { showQueue = true },
-                "Добавить в плейлист" to { Playlists.pendingTrack = ps.mediaId },
-            )
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Panel).padding(vertical = 8.dp)) {
-                items.forEach { (label, act) ->
+                })
+                add((if (Favorites.has(ps.mediaId)) "Убрать из любимого" else "Добавить в любимое") to { showMenu = false; ps.mediaId?.let { Favorites.toggle(it) } })
+                add("Очередь" to { showMenu = false; showQueue = true })
+                add("Добавить в плейлист" to { showMenu = false; Playlists.pendingTrack = ps.mediaId })
+            }
+            Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 12.dp)) {
+                Text(ps.title.ifBlank { "Сейчас играет" }, color = TextC, fontSize = 17.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 22.dp, vertical = 8.dp))
+                rows.forEach { (label, act) ->
                     Text(
-                        label, color = TextC, fontSize = 17.sp,
-                        modifier = Modifier.fillMaxWidth().clickable { showMenu = false; act() }.padding(horizontal = 22.dp, vertical = 16.dp),
+                        label, color = TextC, fontSize = 16.sp,
+                        modifier = Modifier.fillMaxWidth().clickable { act() }.padding(horizontal = 22.dp, vertical = 15.dp),
                     )
                 }
             }
