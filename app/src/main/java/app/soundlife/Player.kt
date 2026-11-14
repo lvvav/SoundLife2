@@ -1,5 +1,6 @@
 package app.soundlife
 
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.Brush
@@ -302,7 +303,7 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
                     ) { Text("Скачать", fontSize = 13.sp) }
                     OutlinedButton(
                         onClick = {
-                            coverAcc?.let { Settings.setAccentArgb(0xFF000000L or (it and 0xFFFFFFL)) }
+                            coverAcc?.let { Settings.setAccentArgb(0xFF000000L or (it.toArgb().toLong() and 0xFFFFFFL)) }
                         },
                         enabled = coverAcc != null,
                         shape = RoundedCornerShape(50), border = BorderStroke(1.dp, Line),
