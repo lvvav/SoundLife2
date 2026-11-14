@@ -2,6 +2,8 @@ package app.soundlife
 
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeChild
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
 
 import app.soundlife.R
 import androidx.compose.ui.text.font.Font
@@ -205,8 +207,17 @@ internal fun MiniPlayer(ps: PlayerUi, c: MediaController, onOpen: () -> Unit) {
         Modifier.padding(horizontal = 12.dp, vertical = 8.dp).fillMaxWidth()
             .shadow(16.dp, glassShape, clip = false)
             .clip(glassShape)
-            .hazeChild(state = GlassState, shape = glassShape)
-            .background(if (Settings.accentFromCover && coverArgbNow != null) Color(lerp(Color(coverArgbNow!!), Color.Black, 0.45f).toArgb()) else Panel.copy(alpha = 0.78f))
+            .hazeChild(
+                state = GlassState,
+                shape = glassShape,
+                style = HazeStyle(
+                    backgroundColor = Bg,
+                    tint = HazeTint(Color.White.copy(alpha = 0.10f)),
+                    blurRadius = 28.dp,
+                    noiseFactor = 0.04f,
+                ),
+            )
+            .background(if (Settings.accentFromCover && coverArgbNow != null) Color(lerp(Color(coverArgbNow!!), Color.Black, 0.45f).toArgb()) else Panel.copy(alpha = 0.45f))
             .background(glassBrush)
             .border(1.dp, Color.White.copy(alpha = 0.12f), glassShape),
     ) {
