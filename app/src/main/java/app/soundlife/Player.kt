@@ -304,7 +304,8 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
                     Column(Modifier.fillMaxWidth().clip(ShapeCard).background(Panel).padding(16.dp)) {
                         Text("Текст", color = TextC, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         Spacer(Modifier.height(8.dp))
-                        LyricsView(lyrs, ps.position, Modifier.fillMaxWidth().height(120.dp), onSeek = { c.seekTo(it) })
+                        // Превью: высота больше, листать нельзя; нажатие на строку открывает полный текст
+                        LyricsView(lyrs, ps.position, Modifier.fillMaxWidth().height(240.dp), onSeek = { showLy = true }, scroll = false)
                         TextButton(onClick = { showLy = true }) { Text("Показать текст", color = Acc) }
                     }
                 }
@@ -364,7 +365,7 @@ internal fun AvatarCircle(data: String, size: Dp) {
 
 /** Текст песни: с таймкодами подсвечивается текущая строка; без них — обычный текст. */
 @Composable
-private fun LyricsView(state: Pair<Boolean, Lyrics.Result?>, pos: Long, modifier: Modifier, onSeek: (Long) -> Unit = {}) {
+private fun LyricsView(state: Pair<Boolean, Lyrics.Result?>, pos: Long, modifier: Modifier, onSeek: (Long) -> Unit = {}, scroll: Boolean = true) {
     val (loaded, r) = state
     Box(modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         when {
@@ -375,7 +376,7 @@ private fun LyricsView(state: Pair<Boolean, Lyrics.Result?>, pos: Long, modifier
                 val cur = r.lines.indexOfLast { it.first <= pos }
                 val list = rememberLazyListState()
                 LaunchedEffect(cur) { if (cur >= 0) list.animateScrollToItem((cur - 2).coerceAtLeast(0)) }
-                LazyColumn(Modifier.fillMaxSize(), state = list, horizontalAlignment = Alignment.CenterHorizontally) {
+                LazyColumn(Modifier.fillMaxSize(), state = list, userScrollEnabled = scroll, horizontalAlignment = Alignment.CenterHorizontally) {
                     itemsIndexed(r.lines) { i, line ->
                         Text(
                             line.second.ifBlank { "♪" }, textAlign = TextAlign.Center, fontSize = 20.sp,
