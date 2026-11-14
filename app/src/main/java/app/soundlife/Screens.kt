@@ -1,5 +1,7 @@
 package app.soundlife
 
+import dev.chrisbanes.haze.haze
+
 import androidx.compose.foundation.border
 import android.net.Uri
 import androidx.activity.compose.BackHandler
@@ -316,7 +318,7 @@ fun SoundLifeApp(controller: MediaController?) {
         },
     ) { pad ->
         Box(
-            Modifier.padding(pad).fillMaxSize()
+            Modifier.padding(pad).fillMaxSize().haze(GlassState)
                 .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)),
         ) {
             when (val s = state) {

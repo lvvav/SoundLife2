@@ -1,5 +1,8 @@
 package app.soundlife
 
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeChild
+
 import app.soundlife.R
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -180,6 +183,9 @@ internal fun fmt(ms: Long): String {
 }
 
 @Composable
+/** Состояние стекла: содержимое экрана, которое размывается под мини-плеером. */
+internal val GlassState = HazeState()
+
 internal fun MiniPlayer(ps: PlayerUi, c: MediaController, onOpen: () -> Unit) {
     val coverArgbNow by produceState<Long?>(null, ps.artUrl) {
         value = null
@@ -199,6 +205,7 @@ internal fun MiniPlayer(ps: PlayerUi, c: MediaController, onOpen: () -> Unit) {
         Modifier.padding(horizontal = 12.dp, vertical = 8.dp).fillMaxWidth()
             .shadow(16.dp, glassShape, clip = false)
             .clip(glassShape)
+            .hazeChild(state = GlassState, shape = glassShape)
             .background(if (Settings.accentFromCover && coverArgbNow != null) Color(lerp(Color(coverArgbNow!!), Color.Black, 0.45f).toArgb()) else Panel.copy(alpha = 0.78f))
             .background(glassBrush)
             .border(1.dp, Color.White.copy(alpha = 0.12f), glassShape),
