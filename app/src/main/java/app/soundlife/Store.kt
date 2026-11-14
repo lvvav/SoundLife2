@@ -206,9 +206,9 @@ object Settings {
     var accentFromCover by mutableStateOf(false)
     /** Конфиденциальность: показывать ли медиатеку и «что я слушаю» друзьям (хранится на устройстве). */
     var privLibrary by mutableStateOf(true)
-    fun setPrivLibrary(v: Boolean) { privLibrary = v; sp.edit().putBoolean("priv_lib", v).apply() }
+    fun setPrivLib(v: Boolean) { privLibrary = v; sp.edit().putBoolean("priv_lib", v).apply() }
     var privNow by mutableStateOf(true)
-    fun setPrivNow(v: Boolean) { privNow = v; sp.edit().putBoolean("priv_now", v).apply() }
+    fun setPrivNowFlag(v: Boolean) { privNow = v; sp.edit().putBoolean("priv_now", v).apply() }
 
     fun setAutoCover(v: Boolean) { accentFromCover = v; sp.edit().putBoolean("accent_from_cover", v).apply() }
 
