@@ -159,7 +159,7 @@ private sealed interface LibState {
 }
 
 /** Экран поверх вкладки (страница артиста, альбома, плейлиста или любимых). */
-private sealed interface Detail {
+internal sealed interface Detail {
     data class Artist(val name: String) : Detail
     data class Album(val name: String) : Detail
     data class Playlist(val name: String) : Detail
