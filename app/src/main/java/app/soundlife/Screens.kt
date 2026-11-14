@@ -305,11 +305,11 @@ fun SoundLifeApp(controller: MediaController?) {
                                 val iconScale by animateFloatAsState(if (sel) 1.12f else 1f, label = "navIcon")
                                 Icon(if (sel) t.on else t.off, t.label, modifier = Modifier.graphicsLayer { scaleX = iconScale; scaleY = iconScale })
                             },
-                            label = { Text(t.label, fontSize = 11.sp) },
+                            label = { Text(t.label, fontSize = 12.sp, fontWeight = if (sel) FontWeight.Bold else FontWeight.Medium) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = Acc, selectedTextColor = Acc,
                                 unselectedIconColor = Mut, unselectedTextColor = Mut,
-                                indicatorColor = Color.Transparent,
+                                indicatorColor = Acc.copy(alpha = 0.18f),
                             ),
                         )
                     }
