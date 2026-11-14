@@ -292,8 +292,8 @@ private fun DevPage(onOpenAdmin: () -> Unit) {
 @Composable
 private fun PrivacyPage() {
     Column {
-        InfoLine("Показывать мою медиатеку", "друзья видят мои альбомы, артистов и недавние лайки")
-        InfoLine("Показывать, что я слушаю", "друзья видят трек, который играет у вас сейчас")
+        ToggleRow("Показывать мою медиатеку", "друзья видят мои альбомы, артистов и недавние лайки", Settings.privLibrary) { Settings.setPrivLibrary(it) }
+        ToggleRow("Показывать, что я слушаю", "друзья видят трек, который играет у вас сейчас", Settings.privNow) { Settings.setPrivNow(it) }
         Text("Если выключить оба пункта, включится приватный режим: друзья ничего не увидят о вашей музыке. Ник и аватарка остаются видны в поиске людей.",
             color = Mut, fontSize = 13.sp, modifier = Modifier.padding(16.dp))
     }

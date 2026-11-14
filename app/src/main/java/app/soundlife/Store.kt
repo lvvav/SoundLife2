@@ -172,6 +172,8 @@ object Settings {
         accentIx = p.getInt(KEY_ACCENT, 0).coerceIn(0, ACCENTS.lastIndex)
         accentCustom = p.getLong("accent_custom", -1L).takeIf { it != -1L }
         accentFromCover = p.getBoolean("accent_from_cover", false)
+        privLibrary = p.getBoolean("priv_lib", true)
+        privNow = p.getBoolean("priv_now", true)
         siteT = p.getLong("site_set_t", 0L)
         Palette.set(0xFF0D0D11L)
         anim = p.getBoolean("f_anim", true)
@@ -202,6 +204,12 @@ object Settings {
 
     /** Тема по обложке: при смене трека акцент берётся из обложки сам. */
     var accentFromCover by mutableStateOf(false)
+    /** Конфиденциальность: показывать ли медиатеку и «что я слушаю» друзьям (хранится на устройстве). */
+    var privLibrary by mutableStateOf(true)
+    fun setPrivLibrary(v: Boolean) { privLibrary = v; sp.edit().putBoolean("priv_lib", v).apply() }
+    var privNow by mutableStateOf(true)
+    fun setPrivNow(v: Boolean) { privNow = v; sp.edit().putBoolean("priv_now", v).apply() }
+
     fun setAutoCover(v: Boolean) { accentFromCover = v; sp.edit().putBoolean("accent_from_cover", v).apply() }
 
     fun setAccent(i: Int) {
