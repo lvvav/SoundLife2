@@ -494,24 +494,16 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
         if (artists.isNotEmpty() && (homeTab == 0 || homeTab == 1)) {
             item { SeeAllHeader("Артисты") { showAllArtists = true } }
             item {
-                Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    artists.take(4).chunked(2).forEach { row ->
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            row.forEach { a -> ArtistCard(a.first, artistImg(a.first, a.second)) { onOpen(Detail.Artist(a.first)) } }
-                        }
-                    }
+                LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    items(artists.take(12), key = { it.first }) { a -> ArtistCard(a.first, artistImg(a.first, a.second)) { onOpen(Detail.Artist(a.first)) } }
                 }
             }
         }
         if (albums.isNotEmpty() && (homeTab == 0 || homeTab == 2)) {
             item { SeeAllHeader("Альбомы") { showAllAlbums = true } }
             item {
-                Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    albums.take(4).chunked(2).forEach { row ->
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            row.forEach { a -> AlbumCard(a) { onOpen(Detail.Album(a.name)) } }
-                        }
-                    }
+                LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    items(albums.take(12), key = { it.name }) { a -> AlbumCard(a) { onOpen(Detail.Album(a.name)) } }
                 }
             }
         }
