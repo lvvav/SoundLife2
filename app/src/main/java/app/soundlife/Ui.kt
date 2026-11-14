@@ -274,7 +274,6 @@ class PlayerUi {
     var repeat by mutableIntStateOf(Player.REPEAT_MODE_ALL)
     var position by mutableLongStateOf(0L)
     var duration by mutableLongStateOf(0L)
-    }
 }
 
 @Composable
