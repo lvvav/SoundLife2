@@ -565,7 +565,7 @@ private fun ArtistCard(name: String, img: String, onClick: () -> Unit) {
 @Composable
 private fun AlbumCard(a: AlbumInfo, onClick: () -> Unit) {
     Column(Modifier.width(158.dp).clickable(onClick = onClick)) {
-        Box(Modifier.clip(RoundedCornerShape(18.dp))) { Cover(a.name, 158.dp, img = a.img, square = true) }
+        Box(Modifier.clip(RoundedCornerShape(8.dp))) { Cover(a.name, 158.dp, img = a.img, square = true) }
         Spacer(Modifier.height(10.dp))
         Text(a.name, color = TextC, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Text(a.artist, color = Mut, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -1110,7 +1110,7 @@ internal fun Cover(seed: String, size: Dp, round: Boolean = false, icon: ImageVe
     val hue = remember(seed) { ((seed.hashCode().toLong() and 0x7fffffffL) % 360L).toFloat() }
     val shape = when {
         round -> CircleShape
-        square -> RoundedCornerShape(16.dp)
+        square -> RoundedCornerShape(8.dp)
         else -> RoundedCornerShape(if (size > 80.dp) 10.dp else 6.dp)
     }
     val brush = Brush.linearGradient(listOf(Color.hsv(hue, 0.55f, 0.55f), Color.hsv((hue + 40f) % 360f, 0.6f, 0.22f)))
@@ -1150,7 +1150,7 @@ private fun AlbumGrid(list: List<AlbumInfo>, onOpen: (AlbumInfo) -> Unit) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 pair.forEach { a ->
                     Column(Modifier.weight(1f).clickable { onOpen(a) }) {
-                        Box(Modifier.clip(RoundedCornerShape(12.dp))) { Cover(a.name, 170.dp, square = true, img = a.img) }
+                        Box(Modifier.clip(RoundedCornerShape(8.dp))) { Cover(a.name, 170.dp, square = true, img = a.img) }
                         Spacer(Modifier.height(8.dp))
                         Text(a.name, color = TextC, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                         Text("Альбом · ${a.artist}", color = Mut, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 13.sp)
@@ -1165,7 +1165,7 @@ private fun AlbumGrid(list: List<AlbumInfo>, onOpen: (AlbumInfo) -> Unit) {
 @Composable
 private fun GradTile(title: String, sub: String, colors: List<Color>, icon: ImageVector, modifier: Modifier, onClick: () -> Unit) {
     Box(
-        modifier.height(112.dp).clip(RoundedCornerShape(20.dp)).background(Brush.linearGradient(colors)).clickable(onClick = onClick).padding(14.dp),
+        modifier.height(112.dp).clip(RoundedCornerShape(12.dp)).background(Brush.linearGradient(colors)).clickable(onClick = onClick).padding(14.dp),
     ) {
         Icon(icon, null, tint = Color.White.copy(alpha = 0.9f), modifier = Modifier.size(22.dp).align(Alignment.TopStart))
         Column(Modifier.align(Alignment.BottomStart)) {

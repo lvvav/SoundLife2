@@ -124,7 +124,7 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
                 "Очередь" to { showQueue = true },
                 "Добавить в плейлист" to { Playlists.pendingTrack = ps.mediaId },
             )
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Panel).padding(vertical = 8.dp)) {
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Panel).padding(vertical = 8.dp)) {
                 items.forEach { (label, act) ->
                     Text(
                         label, color = TextC, fontSize = 17.sp,
@@ -182,7 +182,7 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit) {
                             animationSpec = infiniteRepeatable(tween(2400), RepeatMode.Reverse), label = "scale",
                         )
                         val sc = if (ps.isPlaying) breathScale else 1f
-                        Box(Modifier.size(side).graphicsLayer { scaleX = sc; scaleY = sc }.clip(RoundedCornerShape(16.dp))) {
+                        Box(Modifier.size(side).graphicsLayer { scaleX = sc; scaleY = sc }.clip(RoundedCornerShape(8.dp))) {
                             Cover(ps.title.ifBlank { "SoundLife" }, side, square = true, img = ps.artUrl)
                         }
                     }

@@ -154,11 +154,11 @@ internal fun fmt(ms: Long): String {
 
 @Composable
 internal fun MiniPlayer(ps: PlayerUi, c: MediaController, onOpen: () -> Unit) {
-    val glassShape = RoundedCornerShape(24.dp)
+    val glassShape = RoundedCornerShape(14.dp)
     Column(
         Modifier.padding(horizontal = 12.dp, vertical = 8.dp).fillMaxWidth().clip(glassShape)
-            .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0x40FFFFFF), Color(0x14FFFFFF))))
-            .border(1.dp, Color(0x33FFFFFF), glassShape),
+            .background(Panel)
+            .border(1.dp, Line, glassShape),
     ) {
         val target = if (ps.duration > 0) (ps.position.toFloat() / ps.duration).coerceIn(0f, 1f) else 0f
         val progress by androidx.compose.animation.core.animateFloatAsState(target, label = "miniProgress")
@@ -263,7 +263,7 @@ fun LikeButton(mediaId: String?) {
 
 
 /** Скругления как на сайте: маленькие элементы 10, карточки 14, кнопки и плашки полностью круглые. */
-val ShapeSmall = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
+val ShapeSmall = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
 val ShapeCard = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
 val ShapePill = androidx.compose.foundation.shape.RoundedCornerShape(99.dp)
 
