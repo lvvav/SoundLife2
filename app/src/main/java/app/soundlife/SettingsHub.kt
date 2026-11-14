@@ -163,7 +163,34 @@ private class HubItem(val title: String, val sub: String, val icon: androidx.com
 
 @Composable
 private fun LookPage() {
+    val themes = listOf(
+        "Тёмная" to 0xFF0D0D11L,
+        "Тёмно-серая" to 0xFF121212L,
+        "Синяя" to 0xFF0B1220L,
+        "Розовая" to 0xFF1A0D12L,
+        "Светлая" to 0xFFF5F5F7L,
+    )
+    var themeIx by remember { mutableStateOf(0) }
     LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
+        item { SubHeader("Тема") }
+        item {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                themes.forEachIndexed { i, (name, argb) ->
+                    Column(
+                        Modifier.weight(1f).clickable { themeIx = i; app.soundlife.Palette.set(argb) },
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Box(
+                            Modifier.fillMaxWidth().height(64.dp).clip(RoundedCornerShape(12.dp))
+                                .background(Color(argb))
+                                .border(if (themeIx == i) 2.dp else 1.dp, if (themeIx == i) Acc else Line, RoundedCornerShape(12.dp)),
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Text(name, color = Mut, fontSize = 12.sp, maxLines = 1)
+                    }
+                }
+            }
+        }
         item { SubHeader("Цвет акцента") }
         itemsIndexed(ACCENTS) { i, (argb, name) ->
             Row(

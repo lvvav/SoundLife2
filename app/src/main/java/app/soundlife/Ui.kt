@@ -89,7 +89,7 @@ object Palette {
 
     /** argb — фон сайта, по умолчанию тёмно-серый #0d0d11. */
     fun set(_input: Long) {
-        val argb = 0xFF0D0D11L // фон как на сайте (#0d0d11)
+        val argb = _input
         val r = ((argb shr 16) and 0xFF).toInt()
         val g = ((argb shr 8) and 0xFF).toInt()
         val b = (argb and 0xFF).toInt()
