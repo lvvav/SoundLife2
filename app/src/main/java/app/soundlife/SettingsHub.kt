@@ -38,6 +38,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -62,6 +64,11 @@ internal fun SettingsHub(onClose: () -> Unit) {
         "notif" -> "Уведомления"
         "reset" -> "Сброс"
         "dev" -> "Для разработчиков"
+        "privacy" -> "Конфиденциальность и приватность"
+        "devices" -> "Устройства"
+        "traffic" -> "Трафик и офлайн-режим"
+        "quality" -> "Качество медиафайлов"
+        "info" -> "Информация и поддержка"
         else -> "Настройки"
     }
     Dialog(onDismissRequest = back, properties = DialogProperties(usePlatformDefaultWidth = false)) {
@@ -82,6 +89,10 @@ internal fun SettingsHub(onClose: () -> Unit) {
                 "notif" -> NotifPage()
                 "reset" -> ResetPage()
                 "dev" -> DevPage(onOpenAdmin = { showAdmin = true })
+                "privacy" -> PrivacyPage()
+                "devices" -> DevicesPage()
+                "traffic" -> TrafficPage()
+                "quality" -> QualityPage()
             }
         }
     }
@@ -92,34 +103,68 @@ private fun HubMain(onAccount: () -> Unit, onPage: (String) -> Unit, onUpdates: 
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val notifState = if (Notifier.canPost(ctx)) "включены" else "выключены"
-    val rows = listOf(
-        HubItem("Аккаунт", if (Auth.signedIn) (Auth.account.ifEmpty { "Вход выполнен" }) else "Вход, ник, аватарка", Icons.Filled.Person, onAccount),
-        HubItem("Внешний вид", "Цвет акцента, анимации", Icons.Filled.Palette) { onPage("look") },
-        HubItem("Воспроизведение", if (Settings.mix) "Смешивать с другими приложениями" else "Обычное", Icons.Filled.PlayArrow) { onPage("play") },
-        HubItem("Уведомления", "Сообщения и звонки: $notifState", Icons.Filled.Notifications) { onPage("notif") },
-        HubItem("Обновления", "Что нового в приложении", Icons.Filled.Refresh, onUpdates),
-        HubItem("Проверить обновление", "Скачать и установить без выхода из приложения", Icons.Filled.Refresh) {
-            scope.launch { checkForUpdateNow(ctx) }
-        },
-        HubItem("О приложении", "Версия, сборка", Icons.Filled.Info, onInfo),
-        HubItem("Сброс настроек", "Вернуть всё по умолчанию", Icons.Filled.Refresh) { onPage("reset") },
-        HubItem("Для разработчиков", if (Settings.adminOn) "Админ-панель включена" else "Выключено", Icons.Filled.Build) { onPage("dev") },
+    val groups = listOf(
+        "Аккаунт" to listOf(
+            HubItem("Аккаунт", if (Auth.signedIn) (Auth.account.ifEmpty { "Вход выполнен" }) else "Вход, ник, аватарка", Icons.Filled.Person, onAccount),
+        ),
+        "Внешний вид" to listOf(
+            HubItem("Тема и акцент", "Салатовый, цвет фона, скругление", Icons.Filled.Palette) { onPage("look") },
+        ),
+        "Воспроизведение" to listOf(
+            HubItem("Воспроизведение", if (Settings.mix) "Смешивать с другими приложениями" else "Обычное", Icons.Filled.PlayArrow) { onPage("play") },
+            HubItem("Трафик и офлайн-режим", "Офлайн-память и экономия трафика", Icons.Filled.Refresh) { onPage("traffic") },
+            HubItem("Качество медиафайлов", "Исходное качество, без сжатия", Icons.Filled.Info) { onPage("quality") },
+        ),
+        "Связь" to listOf(
+            HubItem("Уведомления", "Сообщения и звонки: $notifState", Icons.Filled.Notifications) { onPage("notif") },
+            HubItem("Конфиденциальность и приватность", "Медиатека и «что я слушаю»", Icons.Filled.Person) { onPage("privacy") },
+            HubItem("Устройства и «Слушать вместе»", "Комнаты и вход по коду", Icons.Filled.Build) { onPage("devices") },
+        ),
+        "Обслуживание" to listOf(
+            HubItem("Обновления", "Что нового в приложении", Icons.Filled.Refresh, onUpdates),
+            HubItem("Проверить обновление", "Скачать и установить без выхода", Icons.Filled.Refresh) {
+                scope.launch { checkForUpdateNow(ctx) }
+            },
+            HubItem("Информация и поддержка", "О сайте, горячие клавиши, версия", Icons.Filled.Info, onInfo),
+            HubItem("Сброс настроек", "Вернуть всё по умолчанию", Icons.Filled.Refresh) { onPage("reset") },
+            HubItem("Для разработчиков", if (Settings.adminOn) "Админ-панель включена" else "Выключено", Icons.Filled.Build) { onPage("dev") },
+        ),
     )
     LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
-        items(rows) { it ->
-            Row(
-                Modifier.fillMaxWidth().clickable(onClick = it.onClick).padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(it.icon, null, tint = Mut)
-                Spacer(Modifier.width(16.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(it.title, color = TextC, fontSize = 16.sp)
-                    Text(it.sub, color = Mut, fontSize = 13.sp, maxLines = 1)
+        groups.forEach { (label, rows) ->
+            item(key = "h_$label") { SubHeader(label) }
+            items(rows, key = { it.title }) { it ->
+                Row(
+                    Modifier.fillMaxWidth().clickable(onClick = it.onClick).padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(it.title, color = TextC, fontSize = 16.sp)
+                        Text(it.sub, color = Mut, fontSize = 13.sp, maxLines = 2)
+                    }
+                    Icon(Icons.Filled.ChevronRight, null, tint = Mut)
                 }
-                Icon(Icons.Filled.ChevronRight, null, tint = Mut)
             }
         }
+    }
+}
+
+@Composable
+private fun PillButton(text: String, onClick: () -> Unit) {
+    Box(
+        Modifier.clip(RoundedCornerShape(50)).border(1.dp, Line, RoundedCornerShape(50))
+            .clickable(onClick = onClick).padding(horizontal = 18.dp, vertical = 10.dp),
+    ) { Text(text, color = TextC, fontSize = 14.sp, fontWeight = FontWeight.SemiBold) }
+}
+
+@Composable
+private fun InfoLine(title: String, sub: String, trailing: (@Composable () -> Unit)? = null) {
+    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, color = TextC, fontSize = 15.sp)
+            Text(sub, color = Mut, fontSize = 13.sp)
+        }
+        trailing?.invoke()
     }
 }
 
@@ -207,6 +252,50 @@ private fun DevPage(onOpenAdmin: () -> Unit) {
                 modifier = Modifier.padding(16.dp),
             ) { Text("Открыть админ-панель") }
         }
+    }
+}
+
+@Composable
+private fun PrivacyPage() {
+    Column {
+        InfoLine("Показывать мою медиатеку", "друзья видят мои альбомы, артистов и недавние лайки")
+        InfoLine("Показывать, что я слушаю", "друзья видят трек, который играет у вас сейчас")
+        Text("Если выключить оба пункта, включится приватный режим: друзья ничего не увидят о вашей музыке. Ник и аватарка остаются видны в поиске людей.",
+            color = Mut, fontSize = 13.sp, modifier = Modifier.padding(16.dp))
+    }
+}
+
+@Composable
+private fun DevicesPage() {
+    Column {
+        InfoLine("Устройства", "других устройств онлайн нет: откройте SoundLife с этим аккаунтом на другом устройстве")
+        InfoLine("Слушать вместе", "музыка играет одновременно у всех в комнате, пауза и треки может менять любой")
+        Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            PillButton("Создать комнату") {}
+            PillButton("Войти по коду") {}
+        }
+    }
+}
+
+@Composable
+private fun TrafficPage() {
+    Column {
+        SubHeader("Офлайн и приложение")
+        InfoLine("Мои файлы", "свои треки только для вас: хранятся на этом устройстве, никому не видны")
+        InfoLine("Офлайн-память", "Сохраните избранное или очистите память")
+        Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            PillButton("Сохранить избранное") {}
+            PillButton("Очистить") {}
+        }
+    }
+}
+
+@Composable
+private fun QualityPage() {
+    Column {
+        InfoLine("Исходное качество", "треки играют из файлов как есть, без сжатия: mp3, m4a или FLAC")
+        Text("Чтобы тратить меньше трафика, включите «Экономия трафика» в разделе «Трафик и офлайн-режим»: следующие треки не будут догружаться заранее. Скачанные офлайн треки не используют интернет.",
+            color = Mut, fontSize = 13.sp, modifier = Modifier.padding(16.dp))
     }
 }
 
