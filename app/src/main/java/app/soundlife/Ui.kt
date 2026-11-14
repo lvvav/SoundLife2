@@ -165,6 +165,8 @@ internal fun MiniPlayer(ps: PlayerUi, c: MediaController, onOpen: () -> Unit) {
             modifier = Modifier.fillMaxWidth().height(2.dp), color = Acc, trackColor = Color(0x22FFFFFF),
         )
         Row(Modifier.clickable(onClick = onOpen).padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(44.dp).clip(RoundedCornerShape(8.dp))) { Cover(ps.title.ifEmpty { "?" }, 44.dp, square = true, img = ps.artUrl) }
+            Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 AnimatedContent(targetState = ps.title, transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(150)) }, label = "miniTitle") { tt ->
                     Text(tt, color = TextC, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 14.sp)
@@ -239,8 +241,8 @@ fun LikeButton(mediaId: String?) {
     }
     IconButton(onClick = { mediaId?.let { Favorites.toggle(it) } }, enabled = mediaId != null) {
         Icon(
-            if (liked) Icons.Default.Favorite else Icons.Default.FavoriteBorder, "Лайк",
-            tint = if (liked) Acc else Mut,
+            if (liked) Icons.Filled.CheckCircle else Icons.Filled.AddCircleOutline, "Лайк",
+            tint = if (liked) Acc else TextC,
             modifier = Modifier.graphicsLayer { scaleX = pop.value; scaleY = pop.value },
         )
     }

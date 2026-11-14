@@ -1012,10 +1012,10 @@ private fun DetailScreen(d: Detail, cat: Catalog, ps: PlayerUi, c: MediaControll
                 if (d is Detail.Artist) {
                     // Страница исполнителя: большое фото на всю ширину, затемнение снизу
                     val heroImg = artistImg(d.name, info.tracks)
-                    Box(Modifier.fillMaxWidth().height(300.dp).clip(RoundedCornerShape(16.dp))) {
+                    Box(Modifier.fillMaxWidth().height(400.dp)) {
                         if (heroImg.isNotBlank()) RemoteImage(heroImg, Modifier.fillMaxSize())
-                        else Cover(info.seed, 300.dp, img = "")
-                        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xCC000000))))) {}
+                        else Cover(info.seed, 400.dp, img = "", square = true)
+                        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0x33000000), Color(0x00000000), Bg)))) {}
                     }
                 } else {
                     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
