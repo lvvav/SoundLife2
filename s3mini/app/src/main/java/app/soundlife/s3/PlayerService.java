@@ -32,6 +32,13 @@ public class PlayerService extends Service {
         void onChanged();
     }
 
+    /** Очередь воспроизведения: локальная музыка или онлайн. */
+    static void setQueue(java.util.List<Song> list) {
+        songs.clear();
+        songs.addAll(list);
+        current = -1;
+    }
+
     static void setListener(Listener l) {
         listener = l;
     }
