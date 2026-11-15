@@ -786,7 +786,7 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
     var showNewest by remember { mutableStateOf(false) }
     if (showNewest) NewestDialog(cat.tracks, c) { showNewest = false }
     var filter by rememberSaveable { mutableIntStateOf(0) } // 0 всё, 1 плейлисты, 2 альбомы, 3 артисты
-    var grid by rememberSaveable { mutableStateOf(false) }
+    var grid by rememberSaveable { mutableStateOf(true) }
     var showNew by remember { mutableStateOf(false) }
     var newName by remember { mutableStateOf("") }
     var findNick by remember { mutableStateOf(false) }
@@ -813,10 +813,11 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
     val empty = (!showPl || names.isEmpty()) && (!showAl || myAlbums.isEmpty()) && (!showAr || myArtists.isEmpty()) && Subs.ym.isEmpty()
 
     Column(Modifier.fillMaxSize()) {
-        Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 12.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Моя медиатека", color = TextC, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.5).sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-            IconButton(onClick = { showNew = true }) { Icon(Icons.Filled.Add, "Новый плейлист", tint = TextC) }
-            IconButton(onClick = { grid = !grid }) { Icon(if (grid) Icons.AutoMirrored.Filled.List else Icons.Filled.GridView, "Вид", tint = Mut) }
+        Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 14.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Cover("SoundLife", 44.dp, round = true)
+            Spacer(Modifier.width(12.dp))
+            Text("Моя медиатека", color = TextC, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.5).sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            IconButton(onClick = { showNew = true }) { Icon(Icons.Filled.Add, "Новый плейлист", tint = TextC, modifier = Modifier.size(30.dp)) }
             IconButton(onClick = onSettings) { Icon(Icons.Filled.Settings, "Настройки", tint = Mut) }
         }
         LazyRow(
@@ -840,15 +841,10 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
                 Text("Недавние", color = TextC, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                 Icon(Icons.AutoMirrored.Filled.List, "Список", tint = Mut, modifier = Modifier.size(24.dp))
             }
-            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SquareTile("Любимые", plural(favCount), listOf(Color(0xFFB721FF), Color(0xFF21D4FD)), Icons.Filled.Favorite, Modifier.weight(1f)) { onOpen(Detail.Liked) }
-                    SquareTile("Хочу послушать", plural(Wishes.list.size), listOf(Color(0xFFFF8A00), Color(0xFFE52E71)), Icons.Filled.Add, Modifier.weight(1f)) { onOpen(Detail.Wish) }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SquareTile("Новое в хранилище", "Последние 50", listOf(Color(0xFF11998E), Color(0xFF38EF7D)), Icons.Filled.NewReleases, Modifier.weight(1f)) { showNewest = true }
-                    Spacer(Modifier.weight(1f))
-                }
+            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                SquareTile("Любимые", plural(favCount), listOf(Color(0xFF7B2FF7), Color(0xFF21D4FD)), Icons.Filled.Favorite, Modifier.weight(1f)) { onOpen(Detail.Liked) }
+                SquareTile("Хочу послушать", plural(Wishes.list.size), listOf(Color(0xFFFF8A00), Color(0xFFE52E71)), Icons.Filled.Add, Modifier.weight(1f)) { onOpen(Detail.Wish) }
+                SquareTile("Новое в хранилище", "Последние 50", listOf(Color(0xFF11998E), Color(0xFF38EF7D)), Icons.Filled.NewReleases, Modifier.weight(1f)) { showNewest = true }
             }
         }
         LazyColumn(contentPadding = PaddingValues(bottom = 16.dp + LocalBarInset.current)) {
@@ -1502,17 +1498,17 @@ private fun NewestDialog(tracks: List<Track>, c: MediaController?, onClose: () -
 @Composable
 private fun ArtistGrid(list: List<Pair<String, List<Track>>>, onOpen: (Pair<String, List<Track>>) -> Unit) {
     Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-        list.chunked(2).forEach { pair ->
-            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                pair.forEach { a ->
+        list.chunked(3).forEach { trio ->
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                trio.forEach { a ->
                     Column(Modifier.weight(1f).clickable { onOpen(a) }, horizontalAlignment = Alignment.CenterHorizontally) {
-                        Cover(a.first, 160.dp, round = true, img = artistImg(a.first, a.second))
-                        Spacer(Modifier.height(10.dp))
-                        Text(a.first, color = TextC, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 16.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-                        Text(plural(a.second.size), color = Mut, maxLines = 1, fontSize = 13.sp, textAlign = TextAlign.Center)
+                        Cover(a.first, 104.dp, round = true, img = artistImg(a.first, a.second))
+                        Spacer(Modifier.height(8.dp))
+                        Text(a.first, color = TextC, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                        Text(plural(a.second.size), color = Mut, maxLines = 1, fontSize = 12.sp, textAlign = TextAlign.Center)
                     }
                 }
-                if (pair.size == 1) Spacer(Modifier.weight(1f))
+                repeat(3 - trio.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }
@@ -1520,18 +1516,18 @@ private fun ArtistGrid(list: List<Pair<String, List<Track>>>, onOpen: (Pair<Stri
 
 @Composable
 private fun AlbumGrid(list: List<AlbumInfo>, onOpen: (AlbumInfo) -> Unit) {
-    Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        list.chunked(2).forEach { pair ->
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                pair.forEach { a ->
+    Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        list.chunked(3).forEach { trio ->
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                trio.forEach { a ->
                     Column(Modifier.weight(1f).clickable { onOpen(a) }) {
-                        Box(Modifier.clip(RoundedCornerShape(14.dp))) { Cover(a.name, 170.dp, square = true, img = a.img) }
-                        Spacer(Modifier.height(10.dp))
-                        Text(a.name, color = TextC, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        Text(a.artist, color = Mut, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 13.sp)
+                        Box(Modifier.clip(RoundedCornerShape(12.dp))) { Cover(a.name, 112.dp, square = true, img = a.img) }
+                        Spacer(Modifier.height(6.dp))
+                        Text(a.name, color = TextC, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        Text(a.artist, color = Mut, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 12.sp)
                     }
                 }
-                if (pair.size == 1) Spacer(Modifier.weight(1f))
+                repeat(3 - trio.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }
@@ -1555,7 +1551,7 @@ private fun SourceSwitch(labels: List<String>, selected: Int, onSelect: (Int) ->
 @Composable
 private fun SquareTile(title: String, sub: String, colors: List<Color>, icon: ImageVector, modifier: Modifier, onClick: () -> Unit) {
     Box(
-        modifier.aspectRatio(1.25f).clip(RoundedCornerShape(14.dp)).background(Brush.linearGradient(colors)).clickable(onClick = onClick).padding(14.dp),
+        modifier.aspectRatio(1f).clip(RoundedCornerShape(14.dp)).background(Brush.linearGradient(colors)).clickable(onClick = onClick).padding(14.dp),
     ) {
         Icon(icon, null, tint = Color.White.copy(alpha = 0.9f), modifier = Modifier.size(26.dp).align(Alignment.TopStart))
         Column(Modifier.align(Alignment.BottomStart)) {
