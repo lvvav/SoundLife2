@@ -111,7 +111,7 @@ class PlaybackService : MediaSessionService() {
             .setIconResId(if (shuffle) R.drawable.ic_shuffle_on else R.drawable.ic_shuffle_off)
             .setSessionCommand(CMD_SHUFFLE)
             .build()
-        return ImmutableList.of(like, shuf)
+        return ImmutableList.of(shuf, like)
     }
 
     private fun refresh() { session?.setCustomLayout(layout()) }
