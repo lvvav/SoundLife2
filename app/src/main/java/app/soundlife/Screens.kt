@@ -324,7 +324,9 @@ fun SoundLifeApp(controller: MediaController?) {
         containerColor = Bg,
         contentWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
         bottomBar = {
-            Column {
+            // В сообщениях нижняя панель и мини-плеер скрыты
+            val hideBar = detail is Detail.Inbox || detail is Detail.Thread
+            if (!hideBar) Column {
                 androidx.compose.animation.AnimatedVisibility(
                     visible = ps.mediaId != null && controller != null,
                     enter = androidx.compose.animation.slideInVertically(tween(320)) { it } + androidx.compose.animation.fadeIn(tween(320)),
