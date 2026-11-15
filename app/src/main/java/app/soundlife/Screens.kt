@@ -1296,7 +1296,7 @@ private fun ArtistPage(
                     else Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Acc.copy(alpha = 0.5f), Bg))))
                     Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0x66000000), Color(0x00000000), Bg))))
                     Column(Modifier.align(Alignment.BottomStart).padding(start = 16.dp, bottom = 10.dp)) {
-                        Text(d.name, color = TextC, fontSize = 46.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-1).sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Text(d.name, color = TextC, fontSize = 46.sp, lineHeight = 56.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-1).sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         Spacer(Modifier.height(6.dp))
                         Text(heroSub, color = Mut, fontSize = 15.sp)
                     }
