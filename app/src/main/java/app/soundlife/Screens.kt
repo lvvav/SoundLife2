@@ -1,5 +1,7 @@
 package app.soundlife
 
+import androidx.compose.runtime.CompositionLocalProvider
+
 import dev.chrisbanes.haze.haze
 
 import androidx.compose.foundation.border
@@ -317,8 +319,9 @@ fun SoundLifeApp(controller: MediaController?) {
             }
         },
     ) { pad ->
+        CompositionLocalProvider(LocalBarInset provides pad.calculateBottomPadding()) {
         Box(
-            Modifier.padding(pad).fillMaxSize().haze(GlassState)
+            Modifier.padding(top = pad.calculateTopPadding()).fillMaxSize().haze(GlassState)
                 .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)),
         ) {
             when (val s = state) {
@@ -359,6 +362,7 @@ fun SoundLifeApp(controller: MediaController?) {
                     }
                 }
             }
+        }
         }
     }
     }
@@ -414,7 +418,7 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
     if (showAllAlbums) AllGridDialog("Альбомы", { showAllAlbums = false }) {
         items(albums, key = { it.name }) { a -> AlbumCard(a) { showAllAlbums = false; onOpen(Detail.Album(a.name)) } }
     }
-    LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
+    LazyColumn(contentPadding = PaddingValues(bottom = 16.dp + LocalBarInset.current)) {
         item {
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 12.dp, end = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                 // Одна кнопка: аватарка аккаунта открывает меню (настройки и профиль внутри)
@@ -676,7 +680,7 @@ private fun SearchScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen
                 )
             }
         }
-        LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
+        LazyColumn(contentPadding = PaddingValues(bottom = 16.dp + LocalBarInset.current)) {
             if (ar.isNotEmpty() && showL) {
                 item { SectionTitle("Артисты") }
                 items(ar, key = { "a:" + it.first }) { a ->
@@ -789,7 +793,7 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
                 GradTile("Новое в хранилище", "Последние 50", listOf(Color(0xFF11998E), Color(0xFF38EF7D)), Icons.Filled.NewReleases, Modifier.fillMaxWidth()) { showNewest = true }
             }
         }
-        LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
+        LazyColumn(contentPadding = PaddingValues(bottom = 16.dp + LocalBarInset.current)) {
             if (filter == 0) {
                 item { LibRow("Любимые треки", plural(favCount), "liked", icon = Icons.Filled.Favorite) { onOpen(Detail.Liked) } }
                 if (Wishes.list.isNotEmpty()) {
@@ -986,7 +990,7 @@ private fun DetailScreen(d: Detail, cat: Catalog, ps: PlayerUi, c: MediaControll
     }
     val artistAlbums = if (d is Detail.Artist) cat.albums.filter { al -> al.tracks.any { it.artist == d.name } } else emptyList()
 
-    LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
+    LazyColumn(contentPadding = PaddingValues(bottom = 16.dp + LocalBarInset.current)) {
         item {
             Column(
                 Modifier.fillMaxWidth()
@@ -1141,7 +1145,7 @@ private fun NewestDialog(tracks: List<Track>, c: MediaController?, onClose: () -
                 IconButton(onClick = onClose) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад", tint = TextC) }
                 Text("Новое в хранилище", color = TextC, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             }
-            LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
+            LazyColumn(contentPadding = PaddingValues(bottom = 16.dp + LocalBarInset.current)) {
                 itemsIndexed(list, key = { _, t -> "n:" + t.path }) { i, t ->
                     TrackRow(t, playing = false) { c?.playTracks(list, i) }
                 }
@@ -1271,7 +1275,7 @@ private fun UserScreen(d: Detail.User, onBack: () -> Unit, onOpen: (Detail) -> U
     val followed = Follows.isUser(d.uid)
     val nick = person?.nick?.takeIf { it.isNotEmpty() } ?: d.name.takeIf { it.isNotEmpty() }
 
-    LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
+    LazyColumn(contentPadding = PaddingValues(bottom = 16.dp + LocalBarInset.current)) {
         item {
             Box(
                 Modifier.fillMaxWidth().height(190.dp)
@@ -1392,7 +1396,7 @@ private fun YmDetailScreen(d: Detail, ps: PlayerUi, c: MediaController?, onBack:
         else -> ""
     }
 
-    LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
+    LazyColumn(contentPadding = PaddingValues(bottom = 16.dp + LocalBarInset.current)) {
         item {
             Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
@@ -1488,7 +1492,7 @@ private fun InboxScreen(onBack: () -> Unit, onOpen: (Detail) -> Unit) {
     Column(Modifier.fillMaxSize()) {
         ChatTop("Сообщения", onBack)
         if (error.isNotEmpty()) Text(error, color = Mut, modifier = Modifier.padding(16.dp))
-        LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
+        LazyColumn(contentPadding = PaddingValues(bottom = 16.dp + LocalBarInset.current)) {
             if (loaded && dialogs.isEmpty() && error.isEmpty()) {
                 item { Text("Пока нет сообщений. Напишите тому, кто в подписках, или найдите человека по нику.", color = Mut, modifier = Modifier.padding(16.dp)) }
             }
@@ -1979,7 +1983,7 @@ private fun CollabScreen(d: Detail.Collab, cat: Catalog, ps: PlayerUi, c: MediaC
             TextButton(onClick = { confirmGone = true }) { Text(if (owner) "Удалить" else "Выйти", color = Mut) }
         }
         if (error.isNotEmpty()) Text(error, color = Mut, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 16.dp))
-        LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
+        LazyColumn(contentPadding = PaddingValues(bottom = 16.dp + LocalBarInset.current)) {
             if (loaded && keys.isEmpty()) {
                 item { Text("В плейлисте пока нет треков. Добавьте текущий трек кнопкой выше.", color = Mut, modifier = Modifier.padding(16.dp)) }
             }

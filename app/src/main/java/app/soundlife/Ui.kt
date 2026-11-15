@@ -34,6 +34,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -182,6 +183,9 @@ internal fun fmt(ms: Long): String {
     val s = ms / 1000
     return "%d:%02d".format(s / 60, s % 60)
 }
+
+/** Высота нижней панели: контент экрана заходит под неё, а списки добавляют этот отступ в конец. */
+internal val LocalBarInset = compositionLocalOf { 0.dp }
 
 /** Состояние стекла: содержимое экрана, которое размывается под мини-плеером. */
 internal val GlassState = HazeState()
