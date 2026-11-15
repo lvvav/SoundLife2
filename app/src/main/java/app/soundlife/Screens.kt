@@ -989,6 +989,8 @@ private fun DetailScreen(d: Detail, cat: Catalog, ps: PlayerUi, c: MediaControll
         else -> Info("", "", emptyList(), "", false, null, null) {}
     }
     val artistAlbums = if (d is Detail.Artist) cat.albums.filter { al -> al.tracks.any { it.artist == d.name } } else emptyList()
+    var morePop by remember(d) { mutableStateOf(false) }
+    var allRel by remember(d) { mutableStateOf(false) }
 
     LazyColumn(contentPadding = PaddingValues(bottom = 16.dp + LocalBarInset.current)) {
         item {
@@ -1008,6 +1010,10 @@ private fun DetailScreen(d: Detail, cat: Catalog, ps: PlayerUi, c: MediaControll
                         if (heroImg.isNotBlank()) RemoteImage(heroImg, Modifier.fillMaxSize())
                         else Cover(info.seed, 400.dp, img = "", square = true)
                         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0x33000000), Color(0x00000000), Bg)))) {}
+                        Column(Modifier.align(Alignment.BottomStart).padding(bottom = 8.dp)) {
+                            Text(d.name, color = TextC, fontSize = 44.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.8).sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            Text(info.sub, color = Mut, fontSize = 14.sp)
+                        }
                     }
                 } else {
                     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -1016,13 +1022,22 @@ private fun DetailScreen(d: Detail, cat: Catalog, ps: PlayerUi, c: MediaControll
                         }
                     }
                 }
-                Spacer(Modifier.height(18.dp))
-                Text(info.title, color = TextC, fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.6).sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Spacer(Modifier.height(4.dp))
-                Text(info.sub, color = Mut, fontSize = 14.sp)
+                if (d !is Detail.Artist) {
+                    Spacer(Modifier.height(18.dp))
+                    Text(info.title, color = TextC, fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.6).sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Spacer(Modifier.height(4.dp))
+                    Text(info.sub, color = Mut, fontSize = 14.sp)
+                }
                 Spacer(Modifier.height(14.dp))
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    if (info.followed != null) {
+                    if (info.followed != null && d is Detail.Artist) {
+                        Box(
+                            Modifier.clip(RoundedCornerShape(50)).border(1.dp, if (info.followed) Acc else Line, RoundedCornerShape(50))
+                                .clickable(onClick = info.onFollow).padding(horizontal = 18.dp, vertical = 9.dp),
+                        ) {
+                            Text(if (info.followed) "Подписки" else "Подписаться", color = TextC, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                        }
+                    } else if (info.followed != null) {
                         Box(
                             Modifier.size(44.dp).clip(CircleShape).border(1.dp, if (info.followed) Acc else Line, CircleShape)
                                 .clickable(onClick = info.onFollow),
@@ -1063,10 +1078,32 @@ private fun DetailScreen(d: Detail, cat: Catalog, ps: PlayerUi, c: MediaControll
             }
         }
         if (artistAlbums.isNotEmpty()) {
-            item { SectionTitle("Популярные релизы") }
             item {
-                LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(artistAlbums, key = { it.name }) { a -> AlbumCard(a) { onOpen(Detail.Album(a.name)) } }
+                Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 28.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Популярные релизы", color = TextC, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.4).sp, modifier = Modifier.weight(1f))
+                    if (artistAlbums.size > 4) Text(if (allRel) "Свернуть" else "Показать все", color = Mut, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { allRel = !allRel })
+                }
+            }
+            val shownRel = if (allRel) artistAlbums else artistAlbums.take(4)
+            items(shownRel, key = { "rel:" + it.name }) { a ->
+                Row(
+                    Modifier.fillMaxWidth().clickable { onOpen(Detail.Album(a.name)) }.padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(Modifier.clip(RoundedCornerShape(6.dp))) { Cover(a.name, 80.dp, img = a.img, square = true) }
+                    Spacer(Modifier.width(14.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(a.name, color = TextC, fontSize = 17.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text("Альбом · ${a.tracks.size} трек(ов)", color = Mut, fontSize = 14.sp, maxLines = 1)
+                    }
+                }
+            }
+            if (artistAlbums.size > 4) item {
+                Box(Modifier.fillMaxWidth().padding(top = 12.dp), contentAlignment = Alignment.Center) {
+                    Box(
+                        Modifier.clip(RoundedCornerShape(50)).border(1.dp, Line, RoundedCornerShape(50))
+                            .clickable { allRel = !allRel }.padding(horizontal = 22.dp, vertical = 10.dp),
+                    ) { Text(if (allRel) "Свернуть" else "Открыть дискографию", color = TextC, fontSize = 15.sp, fontWeight = FontWeight.Bold) }
                 }
             }
         }
@@ -1093,7 +1130,8 @@ private fun DetailScreen(d: Detail, cat: Catalog, ps: PlayerUi, c: MediaControll
             if (d is Detail.Artist) {
                 // «Популярное»: первые 5 треков с номерами, как у Spotify
                 item { SectionTitle("Популярное") }
-                itemsIndexed(info.tracks.take(5), key = { _, t -> "pop:" + t.path }) { i, t ->
+                val popCount = if (morePop) 10 else 5
+                itemsIndexed(info.tracks.take(popCount), key = { _, t -> "pop:" + t.path }) { i, t ->
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Text("${i + 1}", color = Mut, fontSize = 15.sp, modifier = Modifier.padding(start = 16.dp).width(22.dp))
                         Box(Modifier.weight(1f)) {
@@ -1101,13 +1139,26 @@ private fun DetailScreen(d: Detail, cat: Catalog, ps: PlayerUi, c: MediaControll
                         }
                     }
                 }
-                if (info.tracks.size > 5) item { SectionTitle("Все треки") }
+                if (info.tracks.size > 5) item {
+                    Box(Modifier.fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
+                        Box(
+                            Modifier.clip(RoundedCornerShape(50)).border(1.dp, Line, RoundedCornerShape(50))
+                                .clickable { morePop = !morePop }.padding(horizontal = 22.dp, vertical = 10.dp),
+                        ) { Text(if (morePop) "Свернуть" else "Еще", color = TextC, fontSize = 15.sp, fontWeight = FontWeight.Bold) }
+                    }
+                }
+                if (morePop && info.tracks.size > 10) item { SectionTitle("Все треки") }
             } else {
                 item { SectionTitle("Треки") }
             }
-            itemsIndexed(if (d is Detail.Artist && info.tracks.size > 5) info.tracks.drop(5) else info.tracks, key = { _, t -> t.path }) { i, t ->
-                val idx = if (d is Detail.Artist && info.tracks.size > 5) i + 5 else i
-                TrackRow(t, playing = ps.mediaId == t.path) { c?.playTracks(info.tracks, idx) }
+            if (d !is Detail.Artist) {
+                itemsIndexed(info.tracks, key = { _, t -> t.path }) { i, t ->
+                    TrackRow(t, playing = ps.mediaId == t.path) { c?.playTracks(info.tracks, i) }
+                }
+            } else if (morePop) {
+                itemsIndexed(info.tracks.drop(10), key = { _, t -> "all:" + t.path }) { i, t ->
+                    TrackRow(t, playing = ps.mediaId == t.path) { c?.playTracks(info.tracks, i + 10) }
+                }
             }
         }
     }
