@@ -991,9 +991,10 @@ private fun DetailScreen(d: Detail, cat: Catalog, ps: PlayerUi, c: MediaControll
         else -> Info("", "", emptyList(), "", false, null, null) {}
     }
     val artistAlbums = if (d is Detail.Artist) cat.albums.filter { al -> al.tracks.any { it.artist == d.name } } else emptyList()
-    var morePop by remember(d) { mutableStateOf(false) }
-    var allRel by remember(d) { mutableStateOf(false) }
-
+    if (d is Detail.Artist) {
+        ArtistPage(d, info, artistAlbums, ps, c, onBack, onOpen)
+        return
+    }
     LazyColumn(contentPadding = PaddingValues(bottom = 16.dp + LocalBarInset.current)) {
         item {
             Column(
@@ -1162,6 +1163,134 @@ private fun DetailScreen(d: Detail, cat: Catalog, ps: PlayerUi, c: MediaControll
                     TrackRow(t, playing = ps.mediaId == t.path) { c?.playTracks(info.tracks, i + 10) }
                 }
             }
+        }
+    }
+}
+
+// ───────────────────────── Страница исполнителя (как в Spotify) ─────────────────────────
+
+@Composable
+private fun ArtistPage(
+    d: Detail.Artist, info: Info, albums: List<AlbumInfo>, ps: PlayerUi, c: MediaController?,
+    onBack: () -> Unit, onOpen: (Detail) -> Unit,
+) {
+    val listState = rememberLazyListState()
+    var morePop by remember(d) { mutableStateOf(false) }
+    var allRel by remember(d) { mutableStateOf(false) }
+    val heroImg = artistImg(d.name, info.tracks)
+    val scrolled by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 } }
+    val barAlpha by androidx.compose.animation.core.animateFloatAsState(if (scrolled) 1f else 0f, label = "artistBar")
+    val latest = albums.filter { it.year.isNotBlank() }.maxByOrNull { it.year }
+    val popCount = if (morePop) 10 else 5
+    val shownAlbums = if (allRel) albums else albums.take(4)
+
+    Box(Modifier.fillMaxSize().background(Bg)) {
+        LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = 16.dp + LocalBarInset.current)) {
+            // Шапка: фото на всю ширину, имя поверх, снизу затемнение в цвет фона
+            item {
+                Box(Modifier.fillMaxWidth().height(420.dp)) {
+                    if (heroImg.isNotBlank()) RemoteImage(heroImg, Modifier.fillMaxSize())
+                    else Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Acc.copy(alpha = 0.5f), Bg))))
+                    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0x66000000), Color(0x00000000), Bg))))
+                    Column(Modifier.align(Alignment.BottomStart).padding(start = 16.dp, bottom = 10.dp)) {
+                        Text(d.name, color = TextC, fontSize = 46.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-1).sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Spacer(Modifier.height(6.dp))
+                        Text(info.sub, color = Mut, fontSize = 15.sp)
+                    }
+                }
+            }
+            // Кнопки: подписка, перемешать, играть
+            item {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        Modifier.clip(RoundedCornerShape(50)).border(1.dp, Color(0x55FFFFFF), RoundedCornerShape(50))
+                            .clickable(onClick = info.onFollow).padding(horizontal = 18.dp, vertical = 8.dp),
+                    ) {
+                        Text(if (info.followed == true) "Подписки" else "Подписаться", color = TextC, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.weight(1f))
+                    IconButton(onClick = { c?.playTracks(info.tracks, Random.nextInt(info.tracks.size.coerceAtLeast(1)), true) }) {
+                        Icon(Icons.Filled.Shuffle, "Перемешать", tint = Acc, modifier = Modifier.size(28.dp))
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Box(
+                        Modifier.size(58.dp).clip(CircleShape).background(Acc).clickable { c?.playTracks(info.tracks, 0, false) },
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(Icons.Filled.PlayArrow, "Играть", tint = OnAcc, modifier = Modifier.size(32.dp)) }
+                }
+            }
+            // Популярное: номер, обложка, название и альбом, ⋮
+            item { Text("Популярное", color = TextC, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.4).sp, modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 6.dp)) }
+            itemsIndexed(info.tracks.take(popCount), key = { _, t -> "pop:" + t.path }) { i, t ->
+                val playing = ps.mediaId == t.path
+                Row(
+                    Modifier.fillMaxWidth().clickable { c?.playTracks(info.tracks, i) }.padding(start = 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("${i + 1}", color = if (playing) Acc else Mut, fontSize = 16.sp, modifier = Modifier.width(26.dp))
+                    Box(Modifier.clip(RoundedCornerShape(6.dp))) { Cover(t.title, 52.dp, square = true, img = t.img) }
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(t.title, color = if (playing) Acc else TextC, fontSize = 16.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(t.album.ifBlank { t.artist }, color = Mut, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+            }
+            if (info.tracks.size > 5) item {
+                Box(Modifier.fillMaxWidth().padding(vertical = 10.dp), contentAlignment = Alignment.Center) {
+                    Box(
+                        Modifier.clip(RoundedCornerShape(50)).border(1.dp, Color(0x55FFFFFF), RoundedCornerShape(50))
+                            .clickable { morePop = !morePop }.padding(horizontal = 22.dp, vertical = 9.dp),
+                    ) { Text(if (morePop) "Свернуть" else "Еще", color = TextC, fontSize = 15.sp, fontWeight = FontWeight.Bold) }
+                }
+            }
+            // Популярные релизы: обложка крупно, год и «Последний релиз»
+            if (albums.isNotEmpty()) {
+                item {
+                    Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("Популярные релизы", color = TextC, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.4).sp, modifier = Modifier.weight(1f))
+                        if (albums.size > 4) Text(if (allRel) "Свернуть" else "Показать все", color = Mut, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { allRel = !allRel })
+                    }
+                }
+                items(shownAlbums, key = { "rel:" + it.name }) { a ->
+                    Row(
+                        Modifier.fillMaxWidth().clickable { onOpen(Detail.Album(a.name)) }.padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(Modifier.clip(RoundedCornerShape(8.dp))) { Cover(a.name, 96.dp, img = a.img, square = true) }
+                        Spacer(Modifier.width(14.dp))
+                        Column(Modifier.weight(1f)) {
+                            if (a === latest) Text("Последний релиз", color = Mut, fontSize = 13.sp)
+                            Text(a.name, color = TextC, fontSize = 19.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(listOf("Альбом", a.year).filter { it.isNotBlank() }.joinToString(" • "), color = Mut, fontSize = 15.sp, maxLines = 1)
+                        }
+                    }
+                }
+                if (albums.size > 4) item {
+                    Box(Modifier.fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
+                        Box(
+                            Modifier.clip(RoundedCornerShape(50)).border(1.dp, Color(0x55FFFFFF), RoundedCornerShape(50))
+                                .clickable { allRel = !allRel }.padding(horizontal = 22.dp, vertical = 9.dp),
+                        ) { Text(if (allRel) "Свернуть" else "Открыть дискографию", color = TextC, fontSize = 15.sp, fontWeight = FontWeight.Bold) }
+                    }
+                }
+            }
+            item { Spacer(Modifier.height(16.dp)) }
+        }
+        // Верхняя панель: кнопки на фото, при прокрутке появляется имя
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                Modifier.size(40.dp).clip(CircleShape).background(Color(0x88000000)).clickable(onClick = onBack),
+                contentAlignment = Alignment.Center,
+            ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад", tint = Color.White) }
+            Text(
+                d.name, color = TextC.copy(alpha = barAlpha), fontSize = 17.sp, fontWeight = FontWeight.Bold,
+                maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).padding(horizontal = 10.dp),
+            )
+            Spacer(Modifier.size(40.dp))
         }
     }
 }
