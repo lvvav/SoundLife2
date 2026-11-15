@@ -105,6 +105,25 @@ object Stats {
     @Synchronized
     fun totalHours(): Double = sec.values.sum() / 3600.0
 
+    /** Секунды по трекам за год (ключ — путь трека). */
+    @Synchronized
+    fun yearTrackSeconds(year: Int): Map<String, Double> {
+        val out = HashMap<String, Double>()
+        val prefix = "$year-"
+        for ((dayKey, m) in dtDay) {
+            if (!dayKey.startsWith(prefix)) continue
+            for ((k, v) in m) out[k] = (out[k] ?: 0.0) + v
+        }
+        return out
+    }
+
+    /** Сколько дней в году была прослушка. */
+    @Synchronized
+    fun yearActiveDays(year: Int): Int {
+        val prefix = "$year-"
+        return dtDay.entries.count { it.key.startsWith(prefix) && it.value.values.sum() > 0.0 }
+    }
+
     /** Слияние с данными аккаунта (поля st, dt, cnt, hist). По максимуму, история — объединением. */
     @Synchronized
     fun mergeFromSite(st: JSONObject?, dt: JSONObject?, cntO: JSONObject?, histA: JSONArray?) {
