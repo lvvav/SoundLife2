@@ -310,8 +310,11 @@ class PlayerUi {
 @Composable
 fun rememberPlayerState(c: MediaController?): PlayerUi {
     val ui = remember { PlayerUi() }
+    val ctx = androidx.compose.ui.platform.LocalContext.current
     DisposableEffect(c) {
         if (c == null) return@DisposableEffect onDispose {}
+        // Плеер пустой (приложение открыто заново): возвращаем последний трек на паузе
+        if (c.mediaItemCount == 0) Resume.restore(ctx, c)
         fun sync() {
             ui.mediaId = c.currentMediaItem?.mediaId
             ui.title = c.mediaMetadata.title?.toString() ?: ""
@@ -321,6 +324,7 @@ fun rememberPlayerState(c: MediaController?): PlayerUi {
             ui.shuffle = c.shuffleModeEnabled
             ui.repeat = c.repeatMode
             ui.duration = c.duration.takeIf { it > 0 } ?: 0L
+            Resume.save(ctx, c, force = !c.isPlaying)
         }
         val l = object : Player.Listener {
             override fun onEvents(player: Player, events: Player.Events) = sync()
@@ -329,7 +333,11 @@ fun rememberPlayerState(c: MediaController?): PlayerUi {
         onDispose { c.removeListener(l) }
     }
     LaunchedEffect(c) {
-        while (c != null) { ui.position = c.currentPosition; delay(500) }
+        while (c != null) {
+            ui.position = c.currentPosition
+            if (c.isPlaying) Resume.save(ctx, c)
+            delay(500)
+        }
     }
     return ui
 }
