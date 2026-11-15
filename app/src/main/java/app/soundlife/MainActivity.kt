@@ -12,6 +12,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
+import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
@@ -32,7 +33,7 @@ class MainActivity : ComponentActivity() {
         handleLogin(intent)
         val ask = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
         if (Build.VERSION.SDK_INT >= 33) ask.launch(Manifest.permission.POST_NOTIFICATIONS)
-        setContent { SoundLifeTheme { Box(Modifier.fillMaxSize()) { SoundLifeApp(rememberController()); CallOverlay(); UpdateHost() } } }
+        setContent { CompositionLocalProvider(LocalOverscrollFactory provides null) { SoundLifeTheme { Box(Modifier.fillMaxSize()) { SoundLifeApp(rememberController()); CallOverlay(); UpdateHost() } } } }
     }
 
     /** Фоновое соединение для входящих звонков: только когда вошли в аккаунт. */
