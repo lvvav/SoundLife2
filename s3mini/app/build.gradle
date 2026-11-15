@@ -1,0 +1,25 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'app.soundlife.s3'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'app.soundlife.s3'
+        minSdk 16
+        targetSdk 19
+        versionCode 1
+        versionName '0.1 s3'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    lint {
+        abortOnError false
+    }
+}
