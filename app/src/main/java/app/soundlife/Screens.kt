@@ -24,6 +24,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ElectricBolt
+import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Nightlife
+import androidx.compose.material.icons.filled.Piano
+import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.Waves
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -705,36 +713,32 @@ private fun SearchScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen
         SourceSwitch(listOf("GitHub", "iTunes", "Яндекс Музыка"), srcTab) { srcTab = it }
         if (query.isEmpty()) {
             Text("Жанры", color = TextC, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.4).sp, modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp))
+            // Жанры: цветной градиент и значок жанра, без случайных обложек
             val genres = listOf(
-                "Рок" to Color(0xFF5E8A0A),
-                "Электроника" to Color(0xFF4A7C90),
-                "Хип-хоп" to Color(0xFFB5600E),
-                "Поп" to Color(0xFF4F9BF5),
-                "Джаз" to Color(0xFFD8148C),
-                "Классика" to Color(0xFF00695C),
-                "Инди" to Color(0xFF8A00E6),
-                "Альтернатива" to Color(0xFFE03A00),
+                Triple("Рок", Color(0xFF5E8A0A), Icons.Filled.ElectricBolt),
+                Triple("Электроника", Color(0xFF2E7D9A), Icons.Filled.GraphicEq),
+                Triple("Хип-хоп", Color(0xFFB5600E), Icons.Filled.Mic),
+                Triple("Поп", Color(0xFF4F9BF5), Icons.Filled.Star),
+                Triple("Джаз", Color(0xFFB3137A), Icons.Filled.Nightlife),
+                Triple("Классика", Color(0xFF00695C), Icons.Filled.Piano),
+                Triple("Инди", Color(0xFF7B1FA2), Icons.Filled.Album),
+                Triple("Альтернатива", Color(0xFFD84315), Icons.Filled.Waves),
             )
-            // Каждая плитка берёт свою обложку альбома, без повторов
-            val artPool = remember(cat) { cat.albums.map { it.img }.filter { it.isNotBlank() }.distinct() }
             Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                genres.withIndex().toList().chunked(2).forEach { row ->
+                genres.chunked(2).forEach { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        row.forEach { (idx, pair) ->
-                            val (name, color) = pair
-                            val art = artPool.getOrNull(idx).orEmpty()
+                        row.forEach { (name, color, icon) ->
                             Box(
-                                Modifier.weight(1f).height(120.dp).clip(RoundedCornerShape(14.dp))
-                                    .background(color)
+                                Modifier.weight(1f).height(120.dp).clip(RoundedCornerShape(16.dp))
+                                    .background(Brush.linearGradient(listOf(color, lerp(color, Color.Black, 0.35f))))
                                     .clickable { q = name }
                                     .padding(14.dp),
                             ) {
-                                Text(name, color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 22.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth(0.55f))
-                                Box(Modifier.align(Alignment.BottomEnd).offset(x = 12.dp, y = 14.dp).graphicsLayer { rotationZ = 20f }.clip(RoundedCornerShape(10.dp))) {
-                                    Cover(name, 88.dp, square = true, img = art)
-                                }
+                                Text(name, color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 22.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth(0.7f))
+                                Icon(icon, null, tint = Color.White.copy(alpha = 0.22f), modifier = Modifier.size(84.dp).align(Alignment.BottomEnd).offset(x = 14.dp, y = 14.dp))
                             }
                         }
+                        if (row.size < 2) Spacer(Modifier.weight(1f))
                     }
                 }
             }
@@ -1655,16 +1659,9 @@ private fun AlbumGrid(list: List<AlbumInfo>, onOpen: (AlbumInfo) -> Unit) {
 
 @Composable
 private fun SourceSwitch(labels: List<String>, selected: Int, onSelect: (Int) -> Unit) {
-    Row(
-        Modifier.padding(horizontal = 16.dp, vertical = 8.dp).clip(RoundedCornerShape(50)).background(Color(0xFF15151A)).padding(4.dp),
-    ) {
-        labels.forEachIndexed { i, label ->
-            val on = i == selected
-            Box(
-                Modifier.clip(RoundedCornerShape(50)).background(if (on) Acc else Color.Transparent)
-                    .clickable { onSelect(i) }.padding(horizontal = 18.dp, vertical = 10.dp),
-            ) { Text(label, color = if (on) OnAcc else Mut, fontSize = 15.sp, fontWeight = FontWeight.Bold) }
-        }
+    // Та же анимированная таблетка, что и фильтры медиатеки: капсула плавно переезжает
+    Box(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+        FilterPills(labels, selected) { if (it != selected) onSelect(it) }
     }
 }
 
