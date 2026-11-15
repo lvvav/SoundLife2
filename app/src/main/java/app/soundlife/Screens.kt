@@ -1461,8 +1461,20 @@ private fun AlbumPage(
                     Spacer(Modifier.height(10.dp))
                 }
             }
-            itemsIndexed(tracks, key = { _, t -> t.path }) { i, t ->
-                TrackRow(t, playing = ps.mediaId == t.path) { c?.playTracks(tracks, i) }
+            if (tracks.map { it.disc }.filter { it > 0 }.distinct().size > 1) {
+                // Несколько дисков (тег disc в MP3): делим треки по дискам
+                var prevDisc = -1
+                tracks.forEachIndexed { i, t ->
+                    if (t.disc != prevDisc) {
+                        prevDisc = t.disc
+                        item(key = "disc-$i") { SectionTitle(if (t.disc > 0) "Диск ${t.disc}" else "Без диска") }
+                    }
+                    item(key = t.path) { TrackRow(t, playing = ps.mediaId == t.path) { c?.playTracks(tracks, i) } }
+                }
+            } else {
+                itemsIndexed(tracks, key = { _, t -> t.path }) { i, t ->
+                    TrackRow(t, playing = ps.mediaId == t.path) { c?.playTracks(tracks, i) }
+                }
             }
         }
         Row(
