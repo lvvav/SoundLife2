@@ -214,55 +214,82 @@ internal fun MiniPlayer(ps: PlayerUi, c: MediaController, onOpen: () -> Unit) {
                 state = GlassState,
                 shape = glassShape,
                 style = HazeStyle(
-                    tint = Color.White.copy(alpha = 0.06f),
+                    tint = Color.White.copy(alpha = 0.12f),
                     blurRadius = 28.dp,
                     noiseFactor = 0.04f,
                 ),
             )
-            .background(Panel.copy(alpha = 0.6f))
+            .background(Panel.copy(alpha = 0.22f))
             .background(glassBrush)
             .border(1.dp, Color.White.copy(alpha = 0.12f), glassShape),
     ) {
         val target = if (ps.duration > 0) (ps.position.toFloat() / ps.duration).coerceIn(0f, 1f) else 0f
         val progress by androidx.compose.animation.core.animateFloatAsState(target, label = "miniProgress")
-        LinearProgressIndicator(
-            progress = { progress },
-            modifier = Modifier.fillMaxWidth().height(3.dp), color = Acc, trackColor = Color(0x22FFFFFF),
-        )
-        var swipe by remember { mutableFloatStateOf(0f) }
         val liked = Favorites.has(ps.mediaId)
-        Row(
-            Modifier.clickable(onClick = onOpen)
+        val ctx = LocalContext.current
+        var swipe by remember { mutableFloatStateOf(0f) }
+        Column(
+            Modifier.fillMaxWidth().clickable(onClick = onOpen)
                 .pointerInput(Unit) {
                     detectHorizontalDragGestures(
                         onDragStart = { swipe = 0f },
                         onDragEnd = { if (swipe > 120f) c.seekToPrevious() else if (swipe < -120f) c.seekToNext() },
                     ) { _, d -> swipe += d }
                 }
-                .padding(start = 10.dp, end = 6.dp, top = 10.dp, bottom = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 10.dp),
         ) {
-            Box(Modifier.size(50.dp).clip(RoundedCornerShape(10.dp))) { Cover(ps.title.ifEmpty { "?" }, 50.dp, square = true, img = ps.artUrl) }
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                AnimatedContent(targetState = ps.title, transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(150)) }, label = "miniTitle") { tt ->
-                    Text(tt, color = TextC, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(56.dp).clip(RoundedCornerShape(10.dp))) { Cover(ps.title.ifEmpty { "?" }, 56.dp, square = true, img = ps.artUrl) }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    AnimatedContent(targetState = ps.title, transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(150)) }, label = "miniTitle") { tt ->
+                        Text(tt, color = TextC, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Text(ps.artist, color = Mut, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 13.sp)
                 }
-                Text(ps.artist, color = Mut, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 13.sp)
-            }
-            IconButton(onClick = { ps.mediaId?.let { Favorites.toggle(it) } }) {
-                Icon(Icons.Filled.Favorite, "В любимое", tint = if (liked) Acc else Mut, modifier = Modifier.size(22.dp))
-            }
-            IconButton(onClick = { c.seekToPrevious() }) { Icon(Icons.Default.SkipPrevious, "Назад", tint = TextC) }
-            Box(
-                Modifier.size(46.dp).clip(CircleShape).background(Acc).clickable { if (c.isPlaying) c.pause() else c.play() },
-                contentAlignment = Alignment.Center,
-            ) {
-                AnimatedContent(targetState = ps.isPlaying, transitionSpec = { (fadeIn(tween(180)) + scaleIn(initialScale = 0.7f)) togetherWith (fadeOut(tween(120)) + scaleOut(targetScale = 0.7f)) }, label = "miniPlayPause") { playing ->
-                    Icon(if (playing) Icons.Default.Pause else Icons.Default.PlayArrow, "Пауза/играть", tint = OnAcc)
+                IconButton(onClick = { ps.mediaId?.let { Favorites.toggle(it) } }) {
+                    Icon(Icons.Filled.Favorite, "В любимое", tint = if (liked) Color(0xFFFF4D6D) else Mut, modifier = Modifier.size(24.dp))
                 }
+                IconButton(onClick = { c.seekToPrevious() }) { Icon(Icons.Default.SkipPrevious, "Назад", tint = TextC, modifier = Modifier.size(28.dp)) }
+                Box(
+                    Modifier.size(56.dp).clip(CircleShape).background(Acc).clickable { if (c.isPlaying) c.pause() else c.play() },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    AnimatedContent(targetState = ps.isPlaying, transitionSpec = { (fadeIn(tween(180)) + scaleIn(initialScale = 0.7f)) togetherWith (fadeOut(tween(120)) + scaleOut(targetScale = 0.7f)) }, label = "miniPlayPause") { playing ->
+                        Icon(if (playing) Icons.Default.Pause else Icons.Default.PlayArrow, "Пауза/играть", tint = OnAcc, modifier = Modifier.size(30.dp))
+                    }
+                }
+                IconButton(onClick = { c.seekToNext() }) { Icon(Icons.Default.SkipNext, "Далее", tint = TextC, modifier = Modifier.size(28.dp)) }
             }
-            IconButton(onClick = { c.seekToNext() }) { Icon(Icons.Default.SkipNext, "Далее", tint = TextC) }
+            Spacer(Modifier.height(6.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.Shuffle, "Перемешать", tint = Mut, modifier = Modifier.size(20.dp).clickable { c.shuffleModeEnabled = !c.shuffleModeEnabled })
+                Spacer(Modifier.width(10.dp))
+                Text(fmt(ps.position), color = Mut, fontSize = 12.sp)
+                Spacer(Modifier.width(8.dp))
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier.weight(1f).height(3.dp), color = TextC, trackColor = Color(0x33FFFFFF),
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(fmt(ps.duration), color = Mut, fontSize = 12.sp)
+                Spacer(Modifier.width(10.dp))
+                Box(
+                    Modifier.size(38.dp).clip(CircleShape).background(Acc).clickable {
+                        val id = ps.mediaId
+                        val repo = BuildConfig.GH_REPOS.split(',').map { it.trim() }.firstOrNull { it.isNotEmpty() }
+                        if (id != null && repo != null) {
+                            val req = android.app.DownloadManager.Request(android.net.Uri.parse(Library.rawUrl(repo, id)))
+                                .setTitle(ps.title)
+                                .setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                                .setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_MUSIC, "SoundLife/" + id.substringAfterLast('/'))
+                            (ctx.getSystemService(android.content.Context.DOWNLOAD_SERVICE) as android.app.DownloadManager).enqueue(req)
+                            android.widget.Toast.makeText(ctx, "Скачивание начато", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    contentAlignment = Alignment.Center,
+                ) { Icon(SiteIcons.Dl, "Скачать", tint = OnAcc, modifier = Modifier.size(20.dp)) }
+            }
         }
     }
 }
