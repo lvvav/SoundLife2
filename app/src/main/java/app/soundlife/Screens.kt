@@ -176,7 +176,7 @@ internal sealed interface Detail {
     data class PubPl(val id: String, val name: String, val tracks: List<String>) : Detail
 }
 
-private class AlbumInfo(val name: String, val artist: String, val tracks: List<Track>) {
+internal class AlbumInfo(val name: String, val artist: String, val tracks: List<Track>) {
     val img: String = tracks.firstOrNull { it.img.isNotBlank() }?.img.orEmpty()
     /** Год альбома: первый непустой год из тегов его треков. */
     val year: String = tracks.firstOrNull { it.year.isNotBlank() }?.year.orEmpty()
