@@ -47,6 +47,18 @@ public class PlayerService extends Service {
         return player != null && player.isPlaying();
     }
 
+    static int position() {
+        return player == null ? 0 : player.getCurrentPosition();
+    }
+
+    static int duration() {
+        return player == null ? 0 : Math.max(0, player.getDuration());
+    }
+
+    static void seek(int ms) {
+        if (player != null) player.seekTo(ms);
+    }
+
     @Override
     public IBinder onBind(Intent intent) {
         return null;

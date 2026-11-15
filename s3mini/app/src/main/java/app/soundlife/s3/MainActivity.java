@@ -21,6 +21,8 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.SeekBar;
+import android.os.Handler;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -36,7 +38,7 @@ public class MainActivity extends Activity {
     private static final int TEXT = 0xFFEEEEEE;
     private static final int MUTED = 0xFF888888;
 
-    private static final int HOME = 0, LOCAL = 1, ONLINE = 2, LOGIN = 3;
+    private static final int HOME = 0, LOCAL = 1, ONLINE = 2, LOGIN = 3, FULL = 4;
 
     private final List<Song> localSongs = new ArrayList<Song>();
     private final List<Song> onlineSongs = new ArrayList<Song>();
@@ -45,7 +47,10 @@ public class MainActivity extends Activity {
     private boolean onlineLoaded = false;
     private int screen = HOME;
 
-    private View[] screens = new View[4];
+    private View[] screens = new View[5];
+    private int returnTo = LOCAL;
+    private boolean tracking = false;
+    private final Handler ticker = new Handler();
     private SongAdapter adapter;
     private TextView onlineStatus;
     private TextView loginStatus;
@@ -55,11 +60,28 @@ public class MainActivity extends Activity {
     private TextView barArtist;
     private Button barPlay;
     private Button accountButton;
+    private ImageView fullCover;
+    private TextView fullTitle;
+    private TextView fullArtist;
+    private TextView fullTime;
+    private TextView fullTotal;
+    private SeekBar seek;
+    private Button fullPlay;
+
+    private final Runnable tick = new Runnable() {
+        public void run() {
+            if (screen == FULL) {
+                updateFull();
+                ticker.postDelayed(this, 500);
+            }
+        }
+    };
 
     private final PlayerService.Listener playerListener = new PlayerService.Listener() {
         public void onChanged() {
             if (adapter != null) adapter.notifyDataSetChanged();
             updateBar();
+            if (screen == FULL) refreshFull();
         }
     };
 
@@ -74,6 +96,7 @@ public class MainActivity extends Activity {
         screens[LOCAL] = buildSongs(true);
         screens[ONLINE] = buildSongs(false);
         screens[LOGIN] = buildLogin();
+        screens[FULL] = buildFull();
         for (View v : screens) {
             root.addView(v, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         }
@@ -97,6 +120,7 @@ public class MainActivity extends Activity {
     }
 
     private void show(int which) {
+        ticker.removeCallbacks(tick);
         screen = which;
         for (int i = 0; i < screens.length; i++) {
             screens[i].setVisibility(i == which ? View.VISIBLE : View.GONE);
@@ -184,6 +208,10 @@ public class MainActivity extends Activity {
         bar.addView(smallButton(">>", new View.OnClickListener() {
             public void onClick(View v) { send(PlayerService.ACTION_NEXT, 0); }
         }));
+        // Нажатие на полоску (не на кнопки) открывает полный плеер
+        bar.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) { openFull(); }
+        });
         box.addView(bar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         return box;
     }
@@ -321,6 +349,114 @@ public class MainActivity extends Activity {
         }).start();
     }
 
+    private View buildFull() {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setBackgroundColor(BG);
+        box.setGravity(Gravity.CENTER_HORIZONTAL);
+        box.setPadding(dp(20), dp(10), dp(20), dp(20));
+
+        Button back = smallButton("Свернуть", new View.OnClickListener() {
+            public void onClick(View v) { show(returnTo); }
+        });
+        box.addView(back, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        fullCover = new ImageView(this);
+        fullCover.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        fullCover.setBackgroundColor(0xFF222222);
+        box.addView(fullCover, new LinearLayout.LayoutParams(dp(220), dp(220)));
+
+        fullTitle = text("", 20, TEXT);
+        fullTitle.setGravity(Gravity.CENTER);
+        fullTitle.setSingleLine(true);
+        fullTitle.setEllipsize(TextUtils.TruncateAt.END);
+        box.addView(fullTitle, wrap(0, dp(14), 0, 0));
+
+        fullArtist = text("", 14, MUTED);
+        fullArtist.setGravity(Gravity.CENTER);
+        fullArtist.setSingleLine(true);
+        fullArtist.setEllipsize(TextUtils.TruncateAt.END);
+        box.addView(fullArtist, wrap(0, dp(2), 0, 0));
+
+        seek = new SeekBar(this);
+        seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            public void onProgressChanged(SeekBar sb, int progress, boolean fromUser) {
+                if (fromUser) fullTime.setText(fmt(progress));
+            }
+            public void onStartTrackingTouch(SeekBar sb) { tracking = true; }
+            public void onStopTrackingTouch(SeekBar sb) {
+                tracking = false;
+                PlayerService.seek(sb.getProgress());
+            }
+        });
+        box.addView(seek, wrap(0, dp(18), 0, 0));
+
+        LinearLayout times = new LinearLayout(this);
+        times.setOrientation(LinearLayout.HORIZONTAL);
+        fullTime = text("0:00", 12, MUTED);
+        fullTotal = text("0:00", 12, MUTED);
+        times.addView(fullTime);
+        View gap = new View(this);
+        times.addView(gap, new LinearLayout.LayoutParams(0, 1, 1f));
+        times.addView(fullTotal);
+        box.addView(times, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        LinearLayout controls = new LinearLayout(this);
+        controls.setOrientation(LinearLayout.HORIZONTAL);
+        controls.setGravity(Gravity.CENTER);
+        controls.addView(smallButton("<<", new View.OnClickListener() {
+            public void onClick(View v) { send(PlayerService.ACTION_PREV, 0); }
+        }), new LinearLayout.LayoutParams(dp(90), dp(56)));
+        fullPlay = bigButton(">", new View.OnClickListener() {
+            public void onClick(View v) { send(PlayerService.ACTION_TOGGLE, 0); }
+        });
+        controls.addView(fullPlay, new LinearLayout.LayoutParams(dp(90), dp(56)));
+        controls.addView(smallButton(">>", new View.OnClickListener() {
+            public void onClick(View v) { send(PlayerService.ACTION_NEXT, 0); }
+        }), new LinearLayout.LayoutParams(dp(90), dp(56)));
+        box.addView(controls, wrap(0, dp(18), 0, 0));
+        return box;
+    }
+
+    private void openFull() {
+        returnTo = screen;
+        show(FULL);
+        refreshFull();
+        ticker.post(tick);
+    }
+
+    private void refreshFull() {
+        int current = PlayerService.current;
+        if (current >= 0 && current < PlayerService.songs.size()) {
+            Song s = PlayerService.songs.get(current);
+            fullTitle.setText(s.title == null ? "Без названия" : s.title);
+            fullArtist.setText(s.artist == null ? "" : s.artist);
+            Covers.show(fullCover, s.art);
+        } else {
+            fullTitle.setText("Ничего не играет");
+            fullArtist.setText("");
+            Covers.show(fullCover, null);
+        }
+        updateFull();
+    }
+
+    private void updateFull() {
+        int dur = PlayerService.duration();
+        int pos = PlayerService.position();
+        if (dur > 0) seek.setMax(dur);
+        if (!tracking) {
+            seek.setProgress(pos);
+            fullTime.setText(fmt(pos));
+        }
+        fullTotal.setText(fmt(dur));
+        fullPlay.setText(PlayerService.isPlaying() ? "||" : ">");
+    }
+
+    private static String fmt(int ms) {
+        int sec = Math.max(0, ms) / 1000;
+        return (sec / 60) + ":" + String.format("%02d", sec % 60);
+    }
+
     private void send(String action, int pos) {
         Intent i = new Intent(this, PlayerService.class).setAction(action).putExtra(PlayerService.EXTRA_POS, pos);
         startService(i);
@@ -369,7 +505,9 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if (screen != HOME) {
+        if (screen == FULL) {
+            show(returnTo);
+        } else if (screen != HOME) {
             show(HOME);
         } else {
             super.onBackPressed();
