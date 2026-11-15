@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.text.InputType;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
@@ -15,13 +16,17 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-/** Лёгкая версия SoundLife для старых телефонов (Android 4.1+): музыка, скачанная на телефон. */
+import java.util.ArrayList;
+import java.util.List;
+
+/** Лёгкая версия SoundLife для старых телефонов (Android 4.1+): своя музыка, онлайн-музыка, вход по почте. */
 public class MainActivity extends Activity {
 
     private static final int ACCENT = 0xFF33B5E5;   // голубой Holo
@@ -30,13 +35,25 @@ public class MainActivity extends Activity {
     private static final int TEXT = 0xFFEEEEEE;
     private static final int MUTED = 0xFF888888;
 
-    private boolean loaded = false;
-    private LinearLayout home;
-    private LinearLayout musicScreen;
+    private static final int HOME = 0, LOCAL = 1, ONLINE = 2, LOGIN = 3;
+
+    private final List<Song> localSongs = new ArrayList<Song>();
+    private final List<Song> onlineSongs = new ArrayList<Song>();
+    private List<Song> shown = localSongs;
+    private boolean localLoaded = false;
+    private boolean onlineLoaded = false;
+    private int screen = HOME;
+
+    private View[] screens = new View[4];
     private SongAdapter adapter;
+    private TextView onlineStatus;
+    private TextView loginStatus;
+    private EditText emailField;
+    private EditText passField;
     private TextView barTitle;
     private TextView barArtist;
     private Button barPlay;
+    private Button accountButton;
 
     private final PlayerService.Listener playerListener = new PlayerService.Listener() {
         public void onChanged() {
@@ -48,19 +65,26 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        Session.init(this);
         setTitle("SoundLife");
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(BG);
-        root.addView(buildHome(), new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        root.addView(buildMusic(), new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        screens[HOME] = buildHome();
+        screens[LOCAL] = buildSongs(true);
+        screens[ONLINE] = buildSongs(false);
+        screens[LOGIN] = buildLogin();
+        for (View v : screens) {
+            root.addView(v, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        }
         setContentView(root);
-        showHome();
+        show(HOME);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         PlayerService.setListener(playerListener);
+        refreshAccount();
         if (adapter != null) adapter.notifyDataSetChanged();
         updateBar();
     }
@@ -71,8 +95,15 @@ public class MainActivity extends Activity {
         super.onPause();
     }
 
+    private void show(int which) {
+        screen = which;
+        for (int i = 0; i < screens.length; i++) {
+            screens[i].setVisibility(i == which ? View.VISIBLE : View.GONE);
+        }
+    }
+
     private View buildHome() {
-        home = new LinearLayout(this);
+        LinearLayout home = new LinearLayout(this);
         home.setOrientation(LinearLayout.VERTICAL);
         home.setGravity(Gravity.CENTER);
         home.setBackgroundColor(BG);
@@ -82,24 +113,34 @@ public class MainActivity extends Activity {
         title.setGravity(Gravity.CENTER);
         home.addView(title);
 
-        TextView hint = text("музыка, которая уже на телефоне", 14, MUTED);
+        TextView hint = text("музыка для старого телефона", 14, MUTED);
         hint.setGravity(Gravity.CENTER);
         home.addView(hint, wrap(0, dp(6), 0, dp(30)));
 
-        Button mine = button("Моя музыка");
-        mine.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                showMusic();
-            }
+        home.addView(bigButton("Моя музыка", new View.OnClickListener() {
+            public void onClick(View v) { openLocal(); }
+        }), new LinearLayout.LayoutParams(dp(230), dp(56)));
+        home.addView(bigButton("Онлайн-музыка", new View.OnClickListener() {
+            public void onClick(View v) { openOnline(); }
+        }), wrap(0, dp(14), 0, 0));
+
+        accountButton = smallButton("Войти", new View.OnClickListener() {
+            public void onClick(View v) { openAccount(); }
         });
-        home.addView(mine, new LinearLayout.LayoutParams(dp(230), dp(56)));
+        home.addView(accountButton, wrap(0, dp(20), 0, 0));
         return home;
     }
 
-    private View buildMusic() {
-        musicScreen = new LinearLayout(this);
-        musicScreen.setOrientation(LinearLayout.VERTICAL);
-        musicScreen.setBackgroundColor(BG);
+    private View buildSongs(final boolean local) {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setBackgroundColor(BG);
+
+        if (!local) {
+            onlineStatus = text("Загрузка…", 13, MUTED);
+            onlineStatus.setPadding(dp(14), dp(10), dp(14), dp(6));
+            box.addView(onlineStatus);
+        }
 
         ListView list = new ListView(this);
         list.setDivider(new ColorDrawable(0xFF222222));
@@ -108,10 +149,11 @@ public class MainActivity extends Activity {
         list.setAdapter(adapter);
         list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
+                PlayerService.setQueue(shown);
                 send(PlayerService.ACTION_PLAY_AT, position);
             }
         });
-        musicScreen.addView(list, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+        box.addView(list, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
         LinearLayout bar = new LinearLayout(this);
         bar.setOrientation(LinearLayout.HORIZONTAL);
@@ -141,8 +183,141 @@ public class MainActivity extends Activity {
         bar.addView(smallButton(">>", new View.OnClickListener() {
             public void onClick(View v) { send(PlayerService.ACTION_NEXT, 0); }
         }));
-        musicScreen.addView(bar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        return musicScreen;
+        box.addView(bar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        return box;
+    }
+
+    private View buildLogin() {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setBackgroundColor(BG);
+        box.setPadding(dp(24), dp(24), dp(24), dp(24));
+
+        TextView title = text("Вход по почте", 24, TEXT);
+        box.addView(title, wrap(0, 0, 0, dp(16)));
+
+        emailField = new EditText(this);
+        emailField.setHint("Почта");
+        emailField.setTextColor(TEXT);
+        emailField.setHintTextColor(MUTED);
+        emailField.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+        box.addView(emailField, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        passField = new EditText(this);
+        passField.setHint("Пароль (от 6 символов)");
+        passField.setTextColor(TEXT);
+        passField.setHintTextColor(MUTED);
+        passField.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        box.addView(passField, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        LinearLayout buttons = new LinearLayout(this);
+        buttons.setOrientation(LinearLayout.HORIZONTAL);
+        buttons.addView(bigButton("Войти", new View.OnClickListener() {
+            public void onClick(View v) { authenticate(false); }
+        }), new LinearLayout.LayoutParams(0, dp(50), 1f));
+        buttons.addView(bigButton("Регистрация", new View.OnClickListener() {
+            public void onClick(View v) { authenticate(true); }
+        }), new LinearLayout.LayoutParams(0, dp(50), 1f));
+        box.addView(buttons, wrap(0, dp(16), 0, 0));
+
+        loginStatus = text("", 13, MUTED);
+        box.addView(loginStatus, wrap(0, dp(14), 0, 0));
+
+        Button back = smallButton("Назад", new View.OnClickListener() {
+            public void onClick(View v) { show(HOME); }
+        });
+        box.addView(back, wrap(0, dp(20), 0, 0));
+        return box;
+    }
+
+    private void openLocal() {
+        if (!localLoaded) {
+            loadLocal();
+            localLoaded = true;
+        }
+        shown = localSongs;
+        show(LOCAL);
+        adapter.notifyDataSetChanged();
+        updateBar();
+    }
+
+    private void openOnline() {
+        shown = onlineSongs;
+        show(ONLINE);
+        adapter.notifyDataSetChanged();
+        updateBar();
+        if (onlineLoaded) return;
+        onlineStatus.setText("Загрузка…");
+        new Thread(new Runnable() {
+            public void run() {
+                try {
+                    final List<Song> list = RemoteLib.load();
+                    runOnUiThread(new Runnable() {
+                        public void run() {
+                            onlineSongs.clear();
+                            onlineSongs.addAll(list);
+                            onlineLoaded = true;
+                            onlineStatus.setText(list.isEmpty() ? "В онлайн-библиотеке пока пусто" : "");
+                            if (screen == ONLINE) adapter.notifyDataSetChanged();
+                        }
+                    });
+                } catch (final Exception e) {
+                    runOnUiThread(new Runnable() {
+                        public void run() { onlineStatus.setText("Не удалось загрузить: " + e.getMessage()); }
+                    });
+                }
+            }
+        }).start();
+    }
+
+    private void openAccount() {
+        if (Session.signedIn()) {
+            Session.signOut();
+            refreshAccount();
+            Toast.makeText(this, "Вы вышли", Toast.LENGTH_SHORT).show();
+        } else {
+            loginStatus.setText("");
+            show(LOGIN);
+        }
+    }
+
+    private void refreshAccount() {
+        if (accountButton == null) return;
+        accountButton.setText(Session.signedIn() ? "Выйти (" + Session.email() + ")" : "Войти");
+    }
+
+    private void authenticate(final boolean signUp) {
+        final String mail = emailField.getText().toString().trim();
+        final String pass = passField.getText().toString();
+        if (mail.length() == 0 || pass.length() < 6) {
+            loginStatus.setText("Введите почту и пароль от 6 символов");
+            return;
+        }
+        loginStatus.setText("Подождите…");
+        new Thread(new Runnable() {
+            public void run() {
+                try {
+                    String note = null;
+                    if (signUp) note = Session.signUp(mail, pass); else Session.signIn(mail, pass);
+                    final String message = note;
+                    runOnUiThread(new Runnable() {
+                        public void run() {
+                            if (message != null) {
+                                loginStatus.setText(message);
+                            } else {
+                                passField.setText("");
+                                refreshAccount();
+                                show(HOME);
+                            }
+                        }
+                    });
+                } catch (final Exception e) {
+                    runOnUiThread(new Runnable() {
+                        public void run() { loginStatus.setText(e.getMessage()); }
+                    });
+                }
+            }
+        }).start();
     }
 
     private void send(String action, int pos) {
@@ -150,23 +325,7 @@ public class MainActivity extends Activity {
         startService(i);
     }
 
-    private void showHome() {
-        home.setVisibility(View.VISIBLE);
-        musicScreen.setVisibility(View.GONE);
-    }
-
-    private void showMusic() {
-        if (!loaded) {
-            loadSongs();
-            loaded = true;
-        }
-        home.setVisibility(View.GONE);
-        musicScreen.setVisibility(View.VISIBLE);
-        adapter.notifyDataSetChanged();
-        updateBar();
-    }
-
-    private void loadSongs() {
+    private void loadLocal() {
         ContentResolver cr = getContentResolver();
         Cursor c = cr.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, null,
                 MediaStore.Audio.Media.IS_MUSIC + " != 0", null, MediaStore.Audio.Media.TITLE);
@@ -174,12 +333,11 @@ public class MainActivity extends Activity {
         int iTitle = c.getColumnIndex(MediaStore.Audio.Media.TITLE);
         int iArtist = c.getColumnIndex(MediaStore.Audio.Media.ARTIST);
         int iPath = c.getColumnIndex(MediaStore.Audio.Media.DATA);
-        PlayerService.songs.clear();
         while (c.moveToNext()) {
-            PlayerService.songs.add(new Song(c.getString(iTitle), c.getString(iArtist), c.getString(iPath)));
+            localSongs.add(new Song(c.getString(iTitle), c.getString(iArtist), c.getString(iPath)));
         }
         c.close();
-        if (PlayerService.songs.isEmpty()) {
+        if (localSongs.isEmpty()) {
             Toast.makeText(this, "На телефоне не найдено музыки", Toast.LENGTH_LONG).show();
         }
     }
@@ -200,16 +358,16 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if (musicScreen.getVisibility() == View.VISIBLE) {
-            showHome();
+        if (screen != HOME) {
+            show(HOME);
         } else {
             super.onBackPressed();
         }
     }
 
     private class SongAdapter extends BaseAdapter {
-        public int getCount() { return PlayerService.songs.size(); }
-        public Object getItem(int position) { return PlayerService.songs.get(position); }
+        public int getCount() { return shown.size(); }
+        public Object getItem(int position) { return shown.get(position); }
         public long getItemId(int position) { return position; }
 
         public View getView(int position, View convertView, ViewGroup parent) {
@@ -233,9 +391,10 @@ public class MainActivity extends Activity {
             } else {
                 lines = (TextView[]) row.getTag();
             }
-            Song s = PlayerService.songs.get(position);
+            Song s = shown.get(position);
+            boolean playingThis = shown == PlayerService.songs && position == PlayerService.current;
             lines[0].setText(s.title == null ? "Без названия" : s.title);
-            lines[0].setTextColor(position == PlayerService.current ? ACCENT : TEXT);
+            lines[0].setTextColor(playingThis ? ACCENT : TEXT);
             lines[1].setText(s.artist == null ? "" : s.artist);
             return row;
         }
@@ -249,11 +408,12 @@ public class MainActivity extends Activity {
         return t;
     }
 
-    private Button button(String label) {
+    private Button bigButton(String label, View.OnClickListener click) {
         Button b = new Button(this);
         b.setText(label);
         b.setTextColor(Color.WHITE);
         b.setBackgroundColor(ACCENT);
+        b.setOnClickListener(click);
         return b;
     }
 
