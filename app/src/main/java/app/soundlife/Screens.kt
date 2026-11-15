@@ -178,6 +178,8 @@ internal sealed interface Detail {
 
 private class AlbumInfo(val name: String, val artist: String, val tracks: List<Track>) {
     val img: String = tracks.firstOrNull { it.img.isNotBlank() }?.img.orEmpty()
+    /** Год альбома: первый непустой год из тегов его треков. */
+    val year: String = tracks.firstOrNull { it.year.isNotBlank() }?.year.orEmpty()
 }
 
 /** Каталог: треки, сгруппированные по артистам и альбомам (альбом = папка в music/). */
@@ -1094,7 +1096,7 @@ private fun DetailScreen(d: Detail, cat: Catalog, ps: PlayerUi, c: MediaControll
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f)) {
                         Text(a.name, color = TextC, fontSize = 17.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text("Альбом · ${a.tracks.size} трек(ов)", color = Mut, fontSize = 14.sp, maxLines = 1)
+                        Text(listOf("Альбом", a.year).filter { it.isNotBlank() }.joinToString(" · "), color = Mut, fontSize = 14.sp, maxLines = 1)
                     }
                 }
             }
