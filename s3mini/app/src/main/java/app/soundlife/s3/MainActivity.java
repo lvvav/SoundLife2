@@ -392,7 +392,9 @@ public class MainActivity extends Activity {
                 lines = (TextView[]) row.getTag();
             }
             Song s = shown.get(position);
-            boolean playingThis = shown == PlayerService.songs && position == PlayerService.current;
+            int cur = PlayerService.current;
+            boolean playingThis = cur >= 0 && cur < PlayerService.songs.size()
+                    && PlayerService.songs.get(cur).path.equals(s.path);
             lines[0].setText(s.title == null ? "Без названия" : s.title);
             lines[0].setTextColor(playingThis ? ACCENT : TEXT);
             lines[1].setText(s.artist == null ? "" : s.artist);
