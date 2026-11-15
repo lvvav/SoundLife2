@@ -132,7 +132,6 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.ui.layout.offset
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.runtime.mutableStateMapOf
 import kotlin.math.roundToInt
@@ -1565,7 +1564,7 @@ private fun FilterPills(labels: List<String>, selected: Int, onSelect: (Int) -> 
     val fade by animateFloatAsState(if (selected >= 0) 1f else 0f, tween(260), label = "pillA")
     Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).clip(RoundedCornerShape(50)).background(Color(0xFF15151A)).padding(4.dp)) {
         Box(
-            Modifier.offset { IntOffset(px.roundToInt(), 0) }
+            Modifier.graphicsLayer { translationX = px }
                 .width(with(density) { pw.toDp() }).height(40.dp)
                 .alpha(fade).clip(RoundedCornerShape(50)).background(Acc),
         )
