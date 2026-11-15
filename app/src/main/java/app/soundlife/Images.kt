@@ -54,6 +54,8 @@ internal fun coverAverage(url: String): Long? {
 internal fun vivid(argb: Long): Long {
     val hsv = FloatArray(3)
     android.graphics.Color.RGBToHSV(((argb shr 16) and 0xFF).toInt(), ((argb shr 8) and 0xFF).toInt(), (argb and 0xFF).toInt(), hsv)
+    // Белые и серые обложки не имеют оттенка: вместо случайного цвета берём нейтральный серый акцент.
+    if (hsv[1] < 0.15f) return 0xFFB0B0BCL
     hsv[1] = maxOf(hsv[1], 0.75f)
     hsv[2] = maxOf(hsv[2], 0.95f)
     return 0xFF000000L or (android.graphics.Color.HSVToColor(hsv).toLong() and 0xFFFFFFL)
