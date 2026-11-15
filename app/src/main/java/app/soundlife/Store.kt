@@ -203,8 +203,8 @@ object Settings {
     fun setAccentArgb(v: Long) { accentCustom = v; sp.edit().putLong("accent_custom", v).apply() }
 
     /** OLED-чёрный фон: включается в настройках «Внешний вид». */
-    var oled by mutableStateOf(false)
-    fun setOled(v: Boolean) { oled = v; sp.edit().putBoolean("oled", v).apply(); Palette.set(if (v) 0xFF000000L else 0xFF0D0D11L) }
+    var oledBlack by mutableStateOf(false)
+    fun setOled(v: Boolean) { oledBlack = v; sp.edit().putBoolean("oled", v).apply(); Palette.set(if (v) 0xFF000000L else 0xFF0D0D11L) }
 
     /** Тема по обложке: при смене трека акцент берётся из обложки сам. */
     var accentFromCover by mutableStateOf(false)
