@@ -63,6 +63,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Share
+import androidx.media3.session.MediaController
 import kotlinx.coroutines.delay
 import java.util.Calendar
 
@@ -73,7 +74,9 @@ internal class YearData(
     val days: Int,
     val tracks: Int,
     val artists: Int,
+    val minutes: Long,
     val topArtist: String,
+    val topArtistImg: String,
     val topTracks: List<Pair<Track, Double>>,
     val topAlbum: String,
     val topAlbumArt: String,
@@ -95,13 +98,16 @@ internal fun buildYear(cat: Catalog, year: Int): YearData {
     val topArtist = byArtist.maxByOrNull { it.value }?.key.orEmpty()
     val topAlbum = byAlbum.maxByOrNull { it.value }?.key.orEmpty()
     val art = cat.tracks.firstOrNull { it.album == topAlbum && it.img.isNotBlank() }?.img.orEmpty()
+    val artistImg = cat.tracks.firstOrNull { it.artist == topArtist && it.img.isNotBlank() }?.img.orEmpty()
     return YearData(
         year = year,
         hours = total / 3600.0,
         days = days,
         tracks = tracks.size,
         artists = byArtist.size,
+        minutes = (total / 60).toLong(),
         topArtist = topArtist,
+        topArtistImg = artistImg,
         topTracks = tracks.take(5),
         topAlbum = topAlbum,
         topAlbumArt = art,
@@ -118,7 +124,7 @@ internal fun yearRecapOpen(year: Int): Boolean {
 
 /** Карточка на главной. Нажатие: до 25 декабря спрашивает, ждать или смотреть. */
 @Composable
-internal fun YearRecapCard(cat: Catalog) {
+internal fun YearRecapCard(cat: Catalog, c: MediaController?) {
     val year = Calendar.getInstance().get(Calendar.YEAR)
     var ask by remember { mutableStateOf(false) }
     var gift by remember { mutableStateOf(false) }
@@ -147,14 +153,14 @@ internal fun YearRecapCard(cat: Catalog) {
     }
     if (gift) {
         Dialog(onDismissRequest = { gift = false }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-            YearRecapFlow(cat, year) { gift = false }
+            YearRecapFlow(cat, year, c) { gift = false }
         }
     }
 }
 
 /** Подарок: нажми 3 раза, коробка открывается, дальше истории. */
 @Composable
-private fun YearRecapFlow(cat: Catalog, year: Int, onClose: () -> Unit) {
+private fun YearRecapFlow(cat: Catalog, year: Int, c: MediaController?, onClose: () -> Unit) {
     val data = remember(cat, year) { buildYear(cat, year) }
     var taps by remember { mutableIntStateOf(0) }
     val haptic = LocalHapticFeedback.current
@@ -184,7 +190,7 @@ private fun YearRecapFlow(cat: Catalog, year: Int, onClose: () -> Unit) {
             }
         }
         AnimatedVisibility(visible = opened, enter = fadeIn(tween(400)) + scaleIn(tween(400), initialScale = 0.9f)) {
-            YearStory(data, onClose)
+            YearStory(data, c, onClose)
         }
         Box(Modifier.statusBarsPadding().padding(12.dp).clickable(onClick = onClose)) {
             Icon(Icons.Filled.Close, "Закрыть", tint = Color.White, modifier = Modifier.size(28.dp))
@@ -206,11 +212,12 @@ private val SLIDE_BG = listOf(
 
 /** Истории: тап по левой половине — назад, по правой — дальше. */
 @Composable
-private fun YearStory(d: YearData, onClose: () -> Unit) {
+private fun YearStory(d: YearData, c: MediaController?, onClose: () -> Unit) {
     val n = SLIDE_BG.size
     var idx by remember { mutableIntStateOf(0) }
     val haptic = LocalHapticFeedback.current
     val ctx = LocalContext.current
+    var playing by remember { mutableStateOf(c?.isPlaying == true) }
     Box(
         Modifier.fillMaxSize()
             .background(Brush.verticalGradient(SLIDE_BG[idx]))
@@ -233,8 +240,21 @@ private fun YearStory(d: YearData, onClose: () -> Unit) {
             }
         }
         Crossfade(targetState = idx, animationSpec = tween(450), label = "slide") { i ->
-            Box(Modifier.fillMaxSize().padding(28.dp), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxSize().padding(start = 28.dp, end = 28.dp, top = 80.dp, bottom = 120.dp), contentAlignment = Alignment.Center) {
                 Slide(i, d, ctx)
+            }
+        }
+        // Кнопки на каждом слайде: послушать топ-5 и пауза/играть
+        Row(
+            Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 28.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Pill("▶  Слушать топ-5") {
+                if (c != null && d.topTracks.isNotEmpty()) { c.playTracks(d.topTracks.map { it.first }, 0, false); playing = true }
+            }
+            Pill(if (playing) "⏸  Пауза" else "▶  Играть") {
+                if (c == null) return@Pill
+                if (c.isPlaying) { c.pause(); playing = false } else { c.play(); playing = true }
             }
         }
     }
@@ -243,28 +263,21 @@ private fun YearStory(d: YearData, onClose: () -> Unit) {
 /** Один слайд: число с анимацией появления или список. */
 @Composable
 private fun Slide(i: Int, d: YearData, ctx: android.content.Context) {
-    var go by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { delay(60); go = true }
-    val hours by animateFloatAsState(if (go) d.hours.toFloat() else 0f, tween(1600), label = "hours")
-    val days by animateFloatAsState(if (go) d.days.toFloat() else 0f, tween(1400), label = "days")
-    val artists by animateFloatAsState(if (go) d.artists.toFloat() else 0f, tween(1400), label = "artists")
-    val tracks by animateFloatAsState(if (go) d.tracks.toFloat() else 0f, tween(1400), label = "tracks")
-    val avg by animateFloatAsState(if (go) d.avgMinPerDay.toFloat() else 0f, tween(1400), label = "avg")
     when (i) {
-        0 -> Center("Твой ${d.year}", "В музыке ты провёл", "%.0f".format(hours) + " ч", "Вот что в нём было")
-        1 -> Center("Музыка была с тобой", "Дней с прослушкой", "%.0f".format(days), "В среднем ${avg.toInt()} мин в день")
-        2 -> Center("Исполнитель года", d.topArtist.ifBlank { "—" }, "", "Больше всего ты слушал его")
+        0 -> Center("Твой ${d.year}", "В музыке ты провёл", "${d.minutes} мин", "Вот сколько времени ты был с музыкой")
+        1 -> Center("Музыка была с тобой", "Дней с прослушкой", "${d.days} дн.", "В среднем ${d.avgMinPerDay} мин в день")
+        2 -> ArtistSlide(d, ctx)
         3 -> TopList(d)
-        4 -> Center("Альбом года", d.topAlbum.ifBlank { "—" }, "", "Его ты переслушивал чаще всего")
-        5 -> Center("Исполнителей", "%.0f".format(artists), "", "Ты открыл для себя столько")
-        6 -> Center("Треков", "%.0f".format(tracks), "", "Разных треков за год")
-        7 -> Center("Итог", "Слушай дальше", "", "Спасибо, что был с нами в ${d.year}")
+        4 -> AlbumSlide(d)
+        5 -> Center("Исполнителей", "Ты открыл для себя", "${d.artists}", "Столько разных исполнителей")
+        6 -> Center("Треков", "Разных треков за год", "${d.tracks}", "Столько раз ты нажимал play на новое")
+        7 -> Center("Спасибо", "Слушай дальше", "", "Спасибо, что был с нами в ${d.year}")
         else -> {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("Поделись", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
                 Spacer(Modifier.height(16.dp))
                 TextButton(onClick = {
-                    val text = "Мой ${d.year} в SoundLife: ${"%.0f".format(d.hours)} ч музыки, топ-исполнитель ${d.topArtist}"
+                    val text = "Мой ${d.year} в SoundLife: ${d.minutes} мин музыки, топ-исполнитель ${d.topArtist}"
                     ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), "Поделиться"))
                 }) { Text("Отправить", color = Acc, fontSize = 18.sp) }
             }
@@ -273,11 +286,51 @@ private fun Slide(i: Int, d: YearData, ctx: android.content.Context) {
 }
 
 @Composable
+private fun ArtistSlide(d: YearData, ctx: android.content.Context) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text("Исполнитель года", color = Color.White.copy(alpha = 0.8f), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(18.dp))
+        Cover(d.topArtist.ifBlank { "?" }, 190.dp, round = true, img = d.topArtistImg)
+        Spacer(Modifier.height(18.dp))
+        Text(d.topArtist.ifBlank { "—" }, color = Color.White, fontSize = 34.sp, lineHeight = 40.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(10.dp))
+        Text("Его ты слушал чаще всего", color = Color.White.copy(alpha = 0.7f), fontSize = 15.sp, textAlign = TextAlign.Center)
+    }
+}
+
+@Composable
+private fun AlbumSlide(d: YearData) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text("Альбом года", color = Color.White.copy(alpha = 0.8f), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(18.dp))
+        Box(Modifier.clip(RoundedCornerShape(14.dp))) { Cover(d.topAlbum.ifBlank { "?" }, 230.dp, img = d.topAlbumArt, square = true) }
+        Spacer(Modifier.height(18.dp))
+        Text(d.topAlbum.ifBlank { "—" }, color = Color.White, fontSize = 28.sp, lineHeight = 34.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(10.dp))
+        Text("Его ты переслушивал чаще всего", color = Color.White.copy(alpha = 0.7f), fontSize = 15.sp, textAlign = TextAlign.Center)
+    }
+}
+
+@Composable
+private fun Pill(label: String, onClick: () -> Unit) {
+    Box(
+        Modifier.clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.16f)).clickable(onClick = onClick)
+            .padding(horizontal = 18.dp, vertical = 12.dp),
+    ) {
+        Text(label, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
 private fun Center(title: String, big: String, bigExtra: String, sub: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(title, color = Color.White.copy(alpha = 0.8f), fontSize = 16.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-        Spacer(Modifier.height(16.dp))
-        Text(big + if (bigExtra.isNotEmpty()) " $bigExtra" else "", color = Color.White, fontSize = 44.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(18.dp))
+        Text(big, color = Color.White, fontSize = 30.sp, lineHeight = 38.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+        if (bigExtra.isNotEmpty()) {
+            Spacer(Modifier.height(10.dp))
+            Text(bigExtra, color = Color.White, fontSize = 48.sp, lineHeight = 58.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
+        }
         Spacer(Modifier.height(16.dp))
         Text(sub, color = Color.White.copy(alpha = 0.7f), fontSize = 15.sp, textAlign = TextAlign.Center)
     }
@@ -287,12 +340,14 @@ private fun Center(title: String, big: String, bigExtra: String, sub: String) {
 private fun TopList(d: YearData) {
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Text("Топ-5 треков", color = Color.White.copy(alpha = 0.8f), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(14.dp))
         d.topTracks.forEachIndexed { i, (t, _) ->
             Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("${i + 1}", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.width(30.dp))
+                Text("${i + 1}", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.width(26.dp))
+                Box(Modifier.clip(RoundedCornerShape(8.dp))) { Cover(t.title, 52.dp, img = t.img, square = true) }
+                Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(t.title, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(t.title, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(t.artist, color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }

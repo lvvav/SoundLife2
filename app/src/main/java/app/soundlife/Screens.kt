@@ -492,7 +492,7 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
                 }
             }
         }
-        item { YearRecapCard(cat) }
+        item { YearRecapCard(cat, c) }
         item {
             // «Слушаем дальше»: последний трек и место, где остановились
             val ctxC = LocalContext.current
