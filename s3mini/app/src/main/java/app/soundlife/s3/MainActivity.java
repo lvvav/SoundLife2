@@ -28,6 +28,7 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TreeMap;
 
 /** Лёгкая версия SoundLife для старых телефонов (Android 4.1+): своя музыка, онлайн-музыка, вход по почте. */
 public class MainActivity extends Activity {
@@ -39,6 +40,7 @@ public class MainActivity extends Activity {
     private static final int MUTED = 0xFF888888;
 
     private static final int HOME = 0, LOCAL = 1, ONLINE = 2, LOGIN = 3, FULL = 4;
+    private static final int MODE_TRACKS = 0, MODE_ARTISTS = 1, MODE_ARTIST_SONGS = 2;
 
     private final List<Song> localSongs = new ArrayList<Song>();
     private final List<Song> onlineSongs = new ArrayList<Song>();
@@ -48,6 +50,13 @@ public class MainActivity extends Activity {
     private int screen = HOME;
 
     private View[] screens = new View[5];
+    private int localMode = MODE_TRACKS;
+    private ListView localList;
+    private TextView localHeader;
+    private Button localToggle;
+    private ArtistAdapter artistAdapter;
+    private final TreeMap<String, List<Song>> artistMap = new TreeMap<String, List<Song>>();
+    private final List<String> artistNames = new ArrayList<String>();
     private int returnTo = LOCAL;
     private boolean tracking = false;
     private final Handler ticker = new Handler();
@@ -167,13 +176,35 @@ public class MainActivity extends Activity {
             box.addView(onlineStatus);
         }
 
+        if (local) {
+            LinearLayout head = new LinearLayout(this);
+            head.setOrientation(LinearLayout.HORIZONTAL);
+            head.setGravity(Gravity.CENTER_VERTICAL);
+            head.setPadding(dp(14), dp(8), dp(8), dp(4));
+            localHeader = text("Треки", 15, TEXT);
+            head.addView(localHeader, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            localToggle = smallButton("Исполнители", new View.OnClickListener() {
+                public void onClick(View v) {
+                    setLocalMode(localMode == MODE_TRACKS ? MODE_ARTISTS : MODE_TRACKS, null);
+                }
+            });
+            head.addView(localToggle);
+            box.addView(head, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        }
+
         ListView list = new ListView(this);
         list.setDivider(new ColorDrawable(0xFF222222));
         list.setDividerHeight(1);
         adapter = new SongAdapter();
+        artistAdapter = new ArtistAdapter();
         list.setAdapter(adapter);
+        if (local) localList = list;
         list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
+                if (local && localMode == MODE_ARTISTS) {
+                    setLocalMode(MODE_ARTIST_SONGS, artistNames.get(position));
+                    return;
+                }
                 PlayerService.setQueue(shown);
                 send(PlayerService.ACTION_PLAY_AT, position);
             }
@@ -264,10 +295,34 @@ public class MainActivity extends Activity {
             loadLocal();
             localLoaded = true;
         }
-        shown = localSongs;
         show(LOCAL);
-        adapter.notifyDataSetChanged();
+        setLocalMode(MODE_TRACKS, null);
         updateBar();
+    }
+
+    /** Переключает список: треки, список исполнителей или треки одного исполнителя. */
+    private void setLocalMode(int mode, String artist) {
+        localMode = mode;
+        if (mode == MODE_TRACKS) {
+            shown = localSongs;
+            localList.setAdapter(adapter);
+            localHeader.setText("Треки");
+            localToggle.setText("Исполнители");
+            localToggle.setVisibility(View.VISIBLE);
+        } else if (mode == MODE_ARTISTS) {
+            localList.setAdapter(artistAdapter);
+            localHeader.setText("Исполнители");
+            localToggle.setText("Треки");
+            localToggle.setVisibility(View.VISIBLE);
+        } else {
+            shown = artistMap.get(artist);
+            localList.setAdapter(adapter);
+            localHeader.setText(artist);
+            localToggle.setText("← Назад");
+            localToggle.setVisibility(View.VISIBLE);
+        }
+        if (adapter != null) adapter.notifyDataSetChanged();
+        if (artistAdapter != null) artistAdapter.notifyDataSetChanged();
     }
 
     private void openOnline() {
@@ -484,6 +539,18 @@ public class MainActivity extends Activity {
             localSongs.add(new Song(c.getString(iTitle), c.getString(iArtist), c.getString(iPath), art));
         }
         c.close();
+        artistMap.clear();
+        for (Song song : localSongs) {
+            String name = song.artist == null || song.artist.trim().length() == 0 ? "Неизвестный исполнитель" : song.artist;
+            List<Song> list = artistMap.get(name);
+            if (list == null) {
+                list = new ArrayList<Song>();
+                artistMap.put(name, list);
+            }
+            list.add(song);
+        }
+        artistNames.clear();
+        artistNames.addAll(artistMap.keySet());
         if (localSongs.isEmpty()) {
             Toast.makeText(this, "На телефоне не найдено музыки", Toast.LENGTH_LONG).show();
         }
@@ -505,12 +572,37 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if (screen == FULL) {
+        if (screen == LOCAL && localMode == MODE_ARTIST_SONGS) {
+            setLocalMode(MODE_ARTISTS, null);
+        } else if (screen == LOCAL && localMode == MODE_ARTISTS) {
+            setLocalMode(MODE_TRACKS, null);
+        } else if (screen == FULL) {
             show(returnTo);
         } else if (screen != HOME) {
             show(HOME);
         } else {
             super.onBackPressed();
+        }
+    }
+
+    /** Карточка исполнителя: имя и число треков. */
+    private class ArtistAdapter extends BaseAdapter {
+        public int getCount() { return artistNames.size(); }
+        public Object getItem(int position) { return artistNames.get(position); }
+        public long getItemId(int position) { return position; }
+
+        public View getView(int position, View convertView, ViewGroup parent) {
+            String name = artistNames.get(position);
+            LinearLayout box = new LinearLayout(MainActivity.this);
+            box.setOrientation(LinearLayout.VERTICAL);
+            box.setPadding(dp(16), dp(12), dp(16), dp(12));
+            TextView t1 = text(name, 17, TEXT);
+            t1.setSingleLine(true);
+            t1.setEllipsize(TextUtils.TruncateAt.END);
+            TextView t2 = text(artistMap.get(name).size() + " треков", 13, MUTED);
+            box.addView(t1);
+            box.addView(t2);
+            return box;
         }
     }
 
