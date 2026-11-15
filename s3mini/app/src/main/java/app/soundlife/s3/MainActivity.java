@@ -2,10 +2,10 @@ package app.soundlife.s3;
 
 import android.app.Activity;
 import android.content.ContentResolver;
+import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
-import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.text.TextUtils;
@@ -21,9 +21,6 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /** Лёгкая версия SoundLife для старых телефонов (Android 4.1+): музыка, скачанная на телефон. */
 public class MainActivity extends Activity {
 
@@ -33,23 +30,7 @@ public class MainActivity extends Activity {
     private static final int TEXT = 0xFFEEEEEE;
     private static final int MUTED = 0xFF888888;
 
-    private static class Song {
-        final String title;
-        final String artist;
-        final String path;
-
-        Song(String title, String artist, String path) {
-            this.title = title;
-            this.artist = artist;
-            this.path = path;
-        }
-    }
-
-    private final List<Song> songs = new ArrayList<Song>();
-    private MediaPlayer player;
-    private int current = -1;
     private boolean loaded = false;
-
     private LinearLayout home;
     private LinearLayout musicScreen;
     private SongAdapter adapter;
@@ -57,17 +38,37 @@ public class MainActivity extends Activity {
     private TextView barArtist;
     private Button barPlay;
 
+    private final PlayerService.Listener playerListener = new PlayerService.Listener() {
+        public void onChanged() {
+            if (adapter != null) adapter.notifyDataSetChanged();
+            updateBar();
+        }
+    };
+
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         setTitle("SoundLife");
-
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(BG);
         root.addView(buildHome(), new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         root.addView(buildMusic(), new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         setContentView(root);
         showHome();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        PlayerService.setListener(playerListener);
+        if (adapter != null) adapter.notifyDataSetChanged();
+        updateBar();
+    }
+
+    @Override
+    protected void onPause() {
+        PlayerService.setListener(null);
+        super.onPause();
     }
 
     private View buildHome() {
@@ -107,7 +108,7 @@ public class MainActivity extends Activity {
         list.setAdapter(adapter);
         list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
-                play(position);
+                send(PlayerService.ACTION_PLAY_AT, position);
             }
         });
         musicScreen.addView(list, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
@@ -131,17 +132,22 @@ public class MainActivity extends Activity {
         bar.addView(texts, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
         bar.addView(smallButton("<<", new View.OnClickListener() {
-            public void onClick(View v) { playRelative(-1); }
+            public void onClick(View v) { send(PlayerService.ACTION_PREV, 0); }
         }));
         barPlay = smallButton(">", new View.OnClickListener() {
-            public void onClick(View v) { togglePlay(); }
+            public void onClick(View v) { send(PlayerService.ACTION_TOGGLE, 0); }
         });
         bar.addView(barPlay);
         bar.addView(smallButton(">>", new View.OnClickListener() {
-            public void onClick(View v) { playRelative(1); }
+            public void onClick(View v) { send(PlayerService.ACTION_NEXT, 0); }
         }));
         musicScreen.addView(bar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         return musicScreen;
+    }
+
+    private void send(String action, int pos) {
+        Intent i = new Intent(this, PlayerService.class).setAction(action).putExtra(PlayerService.EXTRA_POS, pos);
+        startService(i);
     }
 
     private void showHome() {
@@ -168,78 +174,28 @@ public class MainActivity extends Activity {
         int iTitle = c.getColumnIndex(MediaStore.Audio.Media.TITLE);
         int iArtist = c.getColumnIndex(MediaStore.Audio.Media.ARTIST);
         int iPath = c.getColumnIndex(MediaStore.Audio.Media.DATA);
+        PlayerService.songs.clear();
         while (c.moveToNext()) {
-            songs.add(new Song(c.getString(iTitle), c.getString(iArtist), c.getString(iPath)));
+            PlayerService.songs.add(new Song(c.getString(iTitle), c.getString(iArtist), c.getString(iPath)));
         }
         c.close();
-        if (songs.isEmpty()) {
+        if (PlayerService.songs.isEmpty()) {
             Toast.makeText(this, "На телефоне не найдено музыки", Toast.LENGTH_LONG).show();
         }
     }
 
-    private void play(int position) {
-        if (position < 0 || position >= songs.size()) return;
-        releasePlayer();
-        Song s = songs.get(position);
-        try {
-            player = new MediaPlayer();
-            player.setDataSource(s.path);
-            player.prepare();
-            player.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-                public void onCompletion(MediaPlayer mp) {
-                    playRelative(1);
-                }
-            });
-            player.start();
-            current = position;
-        } catch (Exception e) {
-            releasePlayer();
-            current = -1;
-            Toast.makeText(this, "Не получилось открыть файл", Toast.LENGTH_SHORT).show();
-        }
-        adapter.notifyDataSetChanged();
-        updateBar();
-    }
-
-    private void playRelative(int delta) {
-        int next = current + delta;
-        if (next < 0 || next >= songs.size()) {
-            releasePlayer();
-            current = -1;
-            adapter.notifyDataSetChanged();
-            updateBar();
-            return;
-        }
-        play(next);
-    }
-
-    private void togglePlay() {
-        if (player == null) {
-            if (!songs.isEmpty()) play(0);
-            return;
-        }
-        if (player.isPlaying()) player.pause(); else player.start();
-        updateBar();
-    }
-
     private void updateBar() {
-        boolean playing = player != null && player.isPlaying();
-        if (current >= 0 && current < songs.size()) {
-            Song s = songs.get(current);
+        if (barTitle == null) return;
+        int current = PlayerService.current;
+        if (current >= 0 && current < PlayerService.songs.size()) {
+            Song s = PlayerService.songs.get(current);
             barTitle.setText(s.title == null ? "Без названия" : s.title);
             barArtist.setText(s.artist == null ? "" : s.artist);
         } else {
             barTitle.setText("Ничего не играет");
             barArtist.setText("");
         }
-        barPlay.setText(playing ? "||" : ">");
-    }
-
-    private void releasePlayer() {
-        if (player != null) {
-            try { player.release(); } catch (Exception ignored) { }
-            player = null;
-        }
+        barPlay.setText(PlayerService.isPlaying() ? "||" : ">");
     }
 
     @Override
@@ -251,15 +207,9 @@ public class MainActivity extends Activity {
         }
     }
 
-    @Override
-    protected void onDestroy() {
-        releasePlayer();
-        super.onDestroy();
-    }
-
     private class SongAdapter extends BaseAdapter {
-        public int getCount() { return songs.size(); }
-        public Object getItem(int position) { return songs.get(position); }
+        public int getCount() { return PlayerService.songs.size(); }
+        public Object getItem(int position) { return PlayerService.songs.get(position); }
         public long getItemId(int position) { return position; }
 
         public View getView(int position, View convertView, ViewGroup parent) {
@@ -277,15 +227,15 @@ public class MainActivity extends Activity {
                 t2.setEllipsize(TextUtils.TruncateAt.END);
                 box.addView(t1);
                 box.addView(t2);
-                box.setTag(new TextView[]{t1, t2});
-                row = box;
                 lines = new TextView[]{t1, t2};
+                box.setTag(lines);
+                row = box;
             } else {
                 lines = (TextView[]) row.getTag();
             }
-            Song s = songs.get(position);
+            Song s = PlayerService.songs.get(position);
             lines[0].setText(s.title == null ? "Без названия" : s.title);
-            lines[0].setTextColor(position == current ? ACCENT : TEXT);
+            lines[0].setTextColor(position == PlayerService.current ? ACCENT : TEXT);
             lines[1].setText(s.artist == null ? "" : s.artist);
             return row;
         }
