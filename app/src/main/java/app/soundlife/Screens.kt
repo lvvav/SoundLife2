@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.outlined.Home as HomeOutlined
 import androidx.compose.material.icons.outlined.LibraryMusic as LibraryMusicOutlined
 import androidx.compose.material.icons.outlined.Search as SearchOutlined
@@ -547,6 +548,19 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
                 }
             }
         }
+        if (homeTab == 0 || homeTab == 3) item {
+            Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 28.dp, end = 16.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Каталог", color = TextC, fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.5).sp)
+                    Text(plural(cat.tracks.size), color = Mut, fontSize = 14.sp)
+                }
+                IconButton(onClick = { c?.playTracks(cat.tracks, Random.nextInt(cat.tracks.size.coerceAtLeast(1)), true) }) { Icon(Icons.Filled.Shuffle, "Перемешать", tint = Mut) }
+                Box(
+                    Modifier.size(56.dp).clip(CircleShape).background(Acc).clickable { c?.playTracks(cat.tracks, 0, false) },
+                    contentAlignment = Alignment.Center,
+                ) { Icon(Icons.Filled.PlayArrow, "Играть", tint = OnAcc, modifier = Modifier.size(30.dp)) }
+            }
+        }
         if (homeTab == 0 || homeTab == 3) itemsIndexed(if (showAllTracks) cat.tracks else cat.tracks.take(20), key = { _, t -> t.path }) { i, t ->
             TrackRow(t, playing = ps.mediaId == t.path) { c?.playTracks(cat.tracks, i) }
         }
@@ -591,7 +605,7 @@ private fun SeeAllCard(round: Boolean, onClick: () -> Unit) {
             Modifier.size(116.dp).clip(shape).background(Hover).border(1.dp, Line, shape),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Filled.Add, "Показать всё", tint = TextC, modifier = Modifier.size(36.dp))
+            Icon(if (round) Icons.Filled.SkipNext else Icons.Filled.Add, "Показать всё", tint = TextC, modifier = Modifier.size(36.dp))
         }
     }
 }
@@ -665,28 +679,33 @@ private fun SearchScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen
             if (q.isNotEmpty()) IconButton(onClick = { q = "" }) { Icon(Icons.Filled.Close, "Очистить", tint = Color(0xFF121212)) }
         }
         if (query.isEmpty()) {
-            Text("Жанры", color = TextC, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            Text("Жанры", color = TextC, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.4).sp, modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp))
             val genres = listOf(
-                "Рок" to listOf(Color(0xFFE53935), Color(0xFF6A1B9A)),
-                "Электроника" to listOf(Color(0xFF00BCD4), Color(0xFF3949AB)),
-                "Хип-хоп" to listOf(Color(0xFFFF9800), Color(0xFFD84315)),
-                "Поп" to listOf(Color(0xFFEC407A), Color(0xFF8E24AA)),
-                "Джаз" to listOf(Color(0xFF8D6E63), Color(0xFF3E2723)),
-                "Классика" to listOf(Color(0xFF26A69A), Color(0xFF004D40)),
-                "Инди" to listOf(Color(0xFF7CB342), Color(0xFF33691E)),
-                "Альтернатива" to listOf(Color(0xFF5C6BC0), Color(0xFF1A237E)),
+                Triple("Рок", Color(0xFF5E8A0A), 0),
+                Triple("Электроника", Color(0xFF4A7C90), 1),
+                Triple("Хип-хоп", Color(0xFFB5600E), 2),
+                Triple("Поп", Color(0xFF4F9BF5), 3),
+                Triple("Джаз", Color(0xFFD8148C), 4),
+                Triple("Классика", Color(0xFF5E8A0A), 5),
+                Triple("Инди", Color(0xFF8A00E6), 6),
+                Triple("Альтернатива", Color(0xFFE03A00), 7),
             )
-            Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            val artPool = remember(cat) { cat.tracks.filter { it.img.isNotBlank() } }
+            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 genres.chunked(2).forEach { row ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        row.forEach { (name, colors) ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        row.forEach { (name, color, idx) ->
+                            val art = artPool.getOrNull(idx * 5)?.img.orEmpty()
                             Box(
-                                Modifier.weight(1f).height(96.dp).clip(ShapeCard)
-                                    .background(Brush.linearGradient(colors))
+                                Modifier.weight(1f).height(116.dp).clip(RoundedCornerShape(16.dp))
+                                    .background(color)
                                     .clickable { q = name }
-                                    .padding(12.dp),
+                                    .padding(14.dp),
                             ) {
-                                Text(name, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                                Text(name, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 24.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth(0.6f))
+                                Box(Modifier.align(Alignment.BottomEnd).graphicsLayer { rotationZ = 18f }.clip(RoundedCornerShape(10.dp))) {
+                                    Cover(name, 84.dp, square = true, img = art)
+                                }
                             }
                         }
                     }
@@ -795,7 +814,7 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
 
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 12.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Медиатека", color = TextC, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.6).sp, modifier = Modifier.weight(1f))
+            Text("Моя медиатека", color = TextC, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.5).sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
             IconButton(onClick = { showNew = true }) { Icon(Icons.Filled.Add, "Новый плейлист", tint = TextC) }
             IconButton(onClick = { grid = !grid }) { Icon(if (grid) Icons.AutoMirrored.Filled.List else Icons.Filled.GridView, "Вид", tint = Mut) }
             IconButton(onClick = onSettings) { Icon(Icons.Filled.Settings, "Настройки", tint = Mut) }
@@ -806,7 +825,8 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
         ) {
             itemsIndexed(listOf("Плейлисты", "Альбомы", "Исполнители", "Люди")) { i, label ->
                 FilterChip(
-                    selected = filter == i, onClick = { filter = i }, label = { Text(label, fontSize = 15.sp, fontWeight = FontWeight.SemiBold) },
+                    selected = filter == i, onClick = { filter = i }, label = { Text(label, fontSize = 16.sp, fontWeight = FontWeight.Medium) },
+                    modifier = Modifier.height(44.dp),
                     colors = FilterChipDefaults.filterChipColors(
                         containerColor = Hover, labelColor = TextC,
                         selectedContainerColor = Acc, selectedLabelColor = OnAcc,
@@ -816,6 +836,10 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
             }
         }
         if (filter == 0) {
+            Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 12.dp, end = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("Недавние", color = TextC, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Icon(Icons.AutoMirrored.Filled.List, "Список", tint = Mut, modifier = Modifier.size(24.dp))
+            }
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 GradTile("Любимые", plural(favCount), listOf(Color(0xFFB721FF), Color(0xFF21D4FD)), Icons.Filled.Favorite, Modifier.weight(1f)) { onOpen(Detail.Liked) }
                 GradTile("Хочу послушать", plural(Wishes.list.size), listOf(Color(0xFFFF8A00), Color(0xFFE52E71)), Icons.Filled.Add, Modifier.weight(1f)) { onOpen(Detail.Wish) }
@@ -870,7 +894,8 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
             if (showAr) items(Subs.ym.filter { it.kind == "artist" }, key = { "yar:" + it.id }) { s ->
                 LibRow(s.title, "Исполнитель · Яндекс Музыка", s.title, round = true, img = s.img) { onOpen(Detail.YmArtistPage(s.id, s.title, s.img)) }
             }
-            if (showAr) items(myArtists, key = { "a:" + it.first }) { a ->
+            if (showAr && grid) item { ArtistGrid(myArtists) { onOpen(Detail.Artist(it.first)) } }
+            if (showAr && !grid) items(myArtists, key = { "a:" + it.first }) { a ->
                 LibRow(a.first, "Артист", a.first, round = true, img = artistImg(a.first, a.second)) { onOpen(Detail.Artist(a.first)) }
             }
             if (empty) item {
@@ -1472,16 +1497,35 @@ private fun NewestDialog(tracks: List<Track>, c: MediaController?, onClose: () -
 }
 
 @Composable
+private fun ArtistGrid(list: List<Pair<String, List<Track>>>, onOpen: (Pair<String, List<Track>>) -> Unit) {
+    Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+        list.chunked(2).forEach { pair ->
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                pair.forEach { a ->
+                    Column(Modifier.weight(1f).clickable { onOpen(a) }, horizontalAlignment = Alignment.CenterHorizontally) {
+                        Cover(a.first, 160.dp, round = true, img = artistImg(a.first, a.second))
+                        Spacer(Modifier.height(10.dp))
+                        Text(a.first, color = TextC, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 16.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                        Text(plural(a.second.size), color = Mut, maxLines = 1, fontSize = 13.sp, textAlign = TextAlign.Center)
+                    }
+                }
+                if (pair.size == 1) Spacer(Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
 private fun AlbumGrid(list: List<AlbumInfo>, onOpen: (AlbumInfo) -> Unit) {
     Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         list.chunked(2).forEach { pair ->
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 pair.forEach { a ->
                     Column(Modifier.weight(1f).clickable { onOpen(a) }) {
-                        Box(Modifier.clip(RoundedCornerShape(8.dp))) { Cover(a.name, 170.dp, square = true, img = a.img) }
-                        Spacer(Modifier.height(8.dp))
-                        Text(a.name, color = TextC, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                        Text("Альбом · ${a.artist}", color = Mut, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 13.sp)
+                        Box(Modifier.clip(RoundedCornerShape(14.dp))) { Cover(a.name, 170.dp, square = true, img = a.img) }
+                        Spacer(Modifier.height(10.dp))
+                        Text(a.name, color = TextC, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text(a.artist, color = Mut, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 13.sp)
                     }
                 }
                 if (pair.size == 1) Spacer(Modifier.weight(1f))
