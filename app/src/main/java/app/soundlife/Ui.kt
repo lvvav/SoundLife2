@@ -88,13 +88,14 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.animation.fadeOut
 
 /** Шрифт Spotify Mix (файлы в res/font). */
+// Manrope: латиница и кириллица в одном шрифте
 private val SpotifyFamily = FontFamily(
-    Font(R.font.spotify_mix_light, FontWeight.Light),
-    Font(R.font.spotify_mix_regular, FontWeight.Normal),
-    Font(R.font.spotify_mix_medium, FontWeight.Medium),
-    Font(R.font.spotify_mix_bold, FontWeight.Bold),
-    Font(R.font.spotify_mix_extrabold, FontWeight.ExtraBold),
-    Font(R.font.spotify_mix_black, FontWeight.Black),
+    Font(R.font.manrope_light, FontWeight.Light),
+    Font(R.font.manrope_regular, FontWeight.Normal),
+    Font(R.font.manrope_medium, FontWeight.Medium),
+    Font(R.font.manrope_bold, FontWeight.Bold),
+    Font(R.font.manrope_extrabold, FontWeight.ExtraBold),
+    Font(R.font.manrope_black, FontWeight.Black),
 )
 private val SpotifyTypography: Typography = Typography().let { base ->
     fun t(s: androidx.compose.ui.text.TextStyle) = s.copy(fontFamily = SpotifyFamily)
