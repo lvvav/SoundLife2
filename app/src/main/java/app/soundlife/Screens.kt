@@ -991,6 +991,8 @@ private fun DetailScreen(d: Detail, cat: Catalog, ps: PlayerUi, c: MediaControll
         else -> Info("", "", emptyList(), "", false, null, null) {}
     }
     val artistAlbums = if (d is Detail.Artist) cat.albums.filter { al -> al.tracks.any { it.artist == d.name } } else emptyList()
+    var morePop by remember(d) { mutableStateOf(false) }
+    var allRel by remember(d) { mutableStateOf(false) }
     if (d is Detail.Artist) {
         ArtistPage(d, info, artistAlbums, ps, c, onBack, onOpen)
         return
