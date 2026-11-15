@@ -142,6 +142,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.LocalIndication
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.DrawerValue
@@ -274,7 +275,7 @@ fun SoundLifeApp(controller: MediaController?) {
     val drawerScope = rememberCoroutineScope()
     ModalNavigationDrawer(
         drawerState = drawer,
-        gesturesEnabled = true,
+        gesturesEnabled = false,
         drawerContent = {
             ModalDrawerSheet(modifier = Modifier.width(300.dp), drawerContainerColor = Bg) {
                 val nickText = Profile.nick.ifEmpty { "SoundLife" }
@@ -371,8 +372,8 @@ fun SoundLifeApp(controller: MediaController?) {
                         }
                     } else when (NavTab.entries[tabIx]) {
                         NavTab.Home -> HomeScreen(cat, ps, controller, onOpen = { openD(it) }, onSettings = { showSettings = true }, onMenu = { drawerScope.launch { drawer.open() } })
-                        NavTab.Search -> SearchScreen(cat, ps, controller, onOpen = { openD(it) })
-                        NavTab.Library -> LibraryScreen(cat, controller, onOpen = { openD(it) }, onSettings = { showSettings = true })
+                        NavTab.Search -> SearchScreen(cat, ps, controller, onOpen = { openD(it) }, onMenu = { drawerScope.launch { drawer.open() } })
+                        NavTab.Library -> LibraryScreen(cat, controller, onOpen = { openD(it) }, onMenu = { drawerScope.launch { drawer.open() } })
                     }
                     }
                 }
@@ -631,7 +632,7 @@ private fun AlbumCard(a: AlbumInfo, onClick: () -> Unit) {
 // ───────────────────────── Поиск ─────────────────────────
 
 @Composable
-private fun SearchScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: (Detail) -> Unit) {
+private fun SearchScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: (Detail) -> Unit, onMenu: () -> Unit = {}) {
     var q by rememberSaveable { mutableStateOf("") }
     var srcTab by rememberSaveable { mutableIntStateOf(0) }
     val showL = srcTab == 0
@@ -665,7 +666,11 @@ private fun SearchScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen
     }
 
     Column(Modifier.fillMaxSize()) {
-        Text("Поиск", color = TextC, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.6).sp, modifier = Modifier.padding(start = 16.dp, top = 12.dp))
+        Row(Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(40.dp).clip(CircleShape).clickable { onMenu() }) { AvatarCircle(Profile.avatar, 40.dp) }
+            Spacer(Modifier.width(12.dp))
+            Text("Поиск", color = TextC, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.6).sp)
+        }
         // Белая строка поиска как в Spotify: закруглённая таблетка, без рамки
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp).height(52.dp)
@@ -784,7 +789,8 @@ private fun SearchScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen
 // ───────────────────────── Медиатека ─────────────────────────
 
 @Composable
-private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) -> Unit, onSettings: () -> Unit) {
+private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) -> Unit, onMenu: () -> Unit = {}) {
+    var addMenu by remember { mutableStateOf(false) }
     var showNewest by remember { mutableStateOf(false) }
     if (showNewest) NewestDialog(cat.tracks, c) { showNewest = false }
     // -1 = всё вместе; 0 плейлисты, 1 альбомы, 2 исполнители, 3 люди. Повторное нажатие на пилюлю возвращает «всё»
@@ -817,11 +823,10 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
 
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 14.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Cover("SoundLife", 44.dp, round = true)
+            Box(Modifier.size(44.dp).clip(CircleShape).clickable { onMenu() }) { AvatarCircle(Profile.avatar, 44.dp) }
             Spacer(Modifier.width(12.dp))
             Text("Моя медиатека", color = TextC, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.5).sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-            IconButton(onClick = { showNew = true }) { Icon(Icons.Filled.Add, "Новый плейлист", tint = TextC, modifier = Modifier.size(30.dp)) }
-            IconButton(onClick = onSettings) { Icon(Icons.Filled.Settings, "Настройки", tint = Mut) }
+            IconButton(onClick = { addMenu = true }) { Icon(Icons.Filled.Add, "Создать", tint = TextC, modifier = Modifier.size(30.dp)) }
         }
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             listOf("Плейлисты", "Альбомы", "Артисты", "Люди").forEachIndexed { i, label ->
@@ -851,16 +856,14 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
                     )
                 }
             }
-            if (showPl) {
+            if (filter == 0) {
                 item { SectionTitle("Плейлисты") }
                 item {
                     TileGrid(
-                        listOf(LibTile("Новый плейлист", "Создать", "new", "", false, Icons.Filled.Add) { showNew = true }) +
-                            names.map { n -> LibTile(n, "Плейлист · ${plural(playlistTracks(cat, n).size)}", n, "", false, Icons.Filled.LibraryMusic) { onOpen(Detail.Playlist(n)) } } +
+                        names.map { n -> LibTile(n, "Плейлист · ${plural(playlistTracks(cat, n).size)}", n, "", false, Icons.Filled.LibraryMusic) { onOpen(Detail.Playlist(n)) } } +
                             Follows.playlists.mapNotNull { id ->
                                 Follows.pubs[id]?.let { pl -> LibTile(pl.name, "Публичный плейлист", "fp:$id", "", false, Icons.Filled.LibraryMusic) { onOpen(Detail.PubPl(pl.id, pl.name, pl.tracks)) } }
                             } +
-                            (if (Auth.signedIn) listOf(LibTile("Совместный плейлист", "Со списком друзей", "newcollab", "", false, Icons.Filled.Group) { newCollab = true }) else emptyList()) +
                             collabs.map { p -> LibTile(p.name, if (p.owner == Auth.userId()) "Совместный · вы владелец" else "Совместный", "cl:${p.id}", "", false, Icons.Filled.Group) { onOpen(Detail.Collab(p.id, p.name, p.owner)) } },
                     )
                 }
@@ -903,6 +906,14 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
                     color = Mut, modifier = Modifier.padding(16.dp),
                 )
             }
+        }
+    }
+
+    if (addMenu) ModalBottomSheet(onDismissRequest = { addMenu = false }, containerColor = Panel) {
+        Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 12.dp)) {
+            Text("Создать", color = TextC, fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 22.dp, vertical = 8.dp))
+            Text("Новый плейлист", color = TextC, fontSize = 16.sp, modifier = Modifier.fillMaxWidth().clickable { addMenu = false; showNew = true }.padding(horizontal = 22.dp, vertical = 15.dp))
+            if (Auth.signedIn) Text("Новый совместный плейлист", color = TextC, fontSize = 16.sp, modifier = Modifier.fillMaxWidth().clickable { addMenu = false; newCollab = true }.padding(horizontal = 22.dp, vertical = 15.dp))
         }
     }
 
