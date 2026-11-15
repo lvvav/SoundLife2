@@ -48,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -107,6 +108,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -821,14 +823,12 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
             IconButton(onClick = { showNew = true }) { Icon(Icons.Filled.Add, "Новый плейлист", tint = TextC, modifier = Modifier.size(30.dp)) }
             IconButton(onClick = onSettings) { Icon(Icons.Filled.Settings, "Настройки", tint = Mut) }
         }
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            itemsIndexed(listOf("Плейлисты", "Альбомы", "Исполнители", "Люди")) { i, label ->
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            listOf("Плейлисты", "Альбомы", "Артисты", "Люди").forEachIndexed { i, label ->
                 FilterChip(
-                    selected = filter == i, onClick = { filter = if (filter == i) -1 else i }, label = { Text(label, fontSize = 16.sp, fontWeight = FontWeight.Medium) },
-                    modifier = Modifier.height(44.dp),
+                    selected = filter == i, onClick = { filter = if (filter == i) -1 else i },
+                    label = { Text(label, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1) },
+                    modifier = Modifier.weight(1f).height(44.dp),
                     colors = FilterChipDefaults.filterChipColors(
                         containerColor = Hover, labelColor = TextC,
                         selectedContainerColor = Acc, selectedLabelColor = OnAcc,
@@ -837,68 +837,65 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
                 )
             }
         }
-        if (filter <= 0) {
-            Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 12.dp, end = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Недавние", color = TextC, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                Icon(Icons.AutoMirrored.Filled.List, "Список", tint = Mut, modifier = Modifier.size(24.dp))
-            }
-            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                SquareTile("Любимые", plural(favCount), listOf(Color(0xFF7B2FF7), Color(0xFF21D4FD)), Icons.Filled.Favorite, Modifier.weight(1f)) { onOpen(Detail.Liked) }
-                SquareTile("Хочу послушать", plural(Wishes.list.size), listOf(Color(0xFFFF8A00), Color(0xFFE52E71)), Icons.Filled.Add, Modifier.weight(1f)) { onOpen(Detail.Wish) }
-                SquareTile("Новое в хранилище", "Последние 50", listOf(Color(0xFF11998E), Color(0xFF38EF7D)), Icons.Filled.NewReleases, Modifier.weight(1f)) { showNewest = true }
-            }
-        }
+        val recentGrad = if (Settings.accentFromCover) listOf(Acc, lerp(Acc, Color.White, 0.35f)) else listOf(Color(0xFF8E6CF0), Color(0xFFC5F540))
         LazyColumn(contentPadding = PaddingValues(bottom = 16.dp + LocalBarInset.current)) {
             if (filter <= 0) {
-                item { LibRow("Любимые треки", plural(favCount), "liked", icon = Icons.Filled.Favorite) { onOpen(Detail.Liked) } }
-                if (Wishes.list.isNotEmpty()) {
-                    item { LibRow("Хочу послушать", plural(Wishes.list.size), "wish", icon = Icons.Filled.Add) { onOpen(Detail.Wish) } }
-                }
-            }
-            if (filter <= 0 && Auth.signedIn) {
-                item { LibRow("Сообщения", "Диалоги", "chat", icon = Icons.AutoMirrored.Filled.Send) { onOpen(Detail.Inbox) } }
-                item { LibRow("Новый совместный плейлист", "Со списком друзей", "newcollab", icon = Icons.Filled.Add) { newCollab = true } }
-                items(collabs, key = { "cl:${it.id}" }) { p ->
-                    LibRow(p.name, if (p.owner == Auth.userId()) "Совместный · вы владелец" else "Совместный", "cl:${p.id}", icon = Icons.Filled.Group) {
-                        onOpen(Detail.Collab(p.id, p.name, p.owner))
-                    }
-                }
-            }
-            if (showPeople) {
-                item { LibRow("Найти человека", "По нику", "findperson", icon = Icons.Filled.Search) { findNick = true } }
-                items(Follows.users, key = { "fu:$it" }) { uid ->
-                    val p = Follows.people[uid]
-                    LibRow(p?.nick?.takeIf { it.isNotEmpty() }?.let { "@$it" } ?: "Пользователь", "Подписка", "fu:$uid", round = true) {
-                        onOpen(Detail.User(uid, p?.nick.orEmpty()))
-                    }
-                }
-                items(Follows.playlists, key = { "fp:$it" }) { id ->
-                    Follows.pubs[id]?.let { pl ->
-                        LibRow(pl.name, "Публичный плейлист", "fp:$id", icon = Icons.Filled.LibraryMusic) { onOpen(Detail.PubPl(pl.id, pl.name, pl.tracks)) }
-                    }
+                item { SectionTitle("Недавние") }
+                item {
+                    TileGrid(
+                        listOf(
+                            LibTile("Любимые треки", "Плейлист · ${plural(favCount)}", "liked", "", false, Icons.Filled.Favorite, recentGrad) { onOpen(Detail.Liked) },
+                            LibTile("Хочу послушать", "Список · ${plural(Wishes.list.size)}", "wish", "", false, Icons.Filled.Add, recentGrad) { onOpen(Detail.Wish) },
+                            LibTile("Новое в хранилище", "Последние 50", "newest", "", false, Icons.Filled.NewReleases, recentGrad) { showNewest = true },
+                        ),
+                    )
                 }
             }
             if (showPl) {
-                item { LibRow("Новый плейлист", "Создать", "new", icon = Icons.Filled.Add) { showNew = true } }
-                items(names, key = { "p:$it" }) { n ->
-                    LibRow(n, "Плейлист · ${plural(playlistTracks(cat, n).size)}", n, icon = Icons.Filled.LibraryMusic) { onOpen(Detail.Playlist(n)) }
+                item { SectionTitle("Плейлисты") }
+                item {
+                    TileGrid(
+                        listOf(LibTile("Новый плейлист", "Создать", "new", "", false, Icons.Filled.Add) { showNew = true }) +
+                            names.map { n -> LibTile(n, "Плейлист · ${plural(playlistTracks(cat, n).size)}", n, "", false, Icons.Filled.LibraryMusic) { onOpen(Detail.Playlist(n)) } } +
+                            Follows.playlists.mapNotNull { id ->
+                                Follows.pubs[id]?.let { pl -> LibTile(pl.name, "Публичный плейлист", "fp:$id", "", false, Icons.Filled.LibraryMusic) { onOpen(Detail.PubPl(pl.id, pl.name, pl.tracks)) } }
+                            } +
+                            (if (Auth.signedIn) listOf(LibTile("Совместный плейлист", "Со списком друзей", "newcollab", "", false, Icons.Filled.Group) { newCollab = true }) else emptyList()) +
+                            collabs.map { p -> LibTile(p.name, if (p.owner == Auth.userId()) "Совместный · вы владелец" else "Совместный", "cl:${p.id}", "", false, Icons.Filled.Group) { onOpen(Detail.Collab(p.id, p.name, p.owner)) } },
+                    )
                 }
             }
-            if (showAl) items(Subs.ym.filter { it.kind == "album" }, key = { "yalb:" + it.id }) { s ->
-                LibRow(s.title, "Альбом · ${s.sub}", s.title, img = s.img) { onOpen(Detail.YmAlbumPage(s.id, s.title, s.sub, s.img)) }
+            if (showAl) {
+                item { SectionTitle("Альбомы") }
+                item {
+                    TileGrid(
+                        myAlbums.map { a -> LibTile(a.name, a.artist, a.name, a.img, false, null) { onOpen(Detail.Album(a.name)) } } +
+                            Subs.ym.filter { it.kind == "album" }.map { s -> LibTile(s.title, s.sub, s.title, s.img, false, null) { onOpen(Detail.YmAlbumPage(s.id, s.title, s.sub, s.img)) } },
+                    )
+                }
             }
-            if (showAl && grid && filter < 0 && myAlbums.isNotEmpty()) item { SectionTitle("Альбомы") }
-            if (showAl && grid) item { AlbumGrid(myAlbums) { onOpen(Detail.Album(it.name)) } }
-            if (showAl && !grid) items(myAlbums, key = { "b:" + it.name }) { a ->
-                LibRow(a.name, "Альбом · ${a.artist}", a.name, img = a.img) { onOpen(Detail.Album(a.name)) }
+            if (showAr) {
+                item { SectionTitle("Артисты") }
+                item {
+                    TileGrid(
+                        myArtists.map { a -> LibTile(a.first, "Артист · ${plural(a.second.size)}", a.first, artistImg(a.first, a.second), true, null) { onOpen(Detail.Artist(a.first)) } } +
+                            Subs.ym.filter { it.kind == "artist" }.map { s -> LibTile(s.title, "Исполнитель · Яндекс Музыка", s.title, s.img, true, null) { onOpen(Detail.YmArtistPage(s.id, s.title, s.img)) } },
+                    )
+                }
             }
-            if (showAr) items(Subs.ym.filter { it.kind == "artist" }, key = { "yar:" + it.id }) { s ->
-                LibRow(s.title, "Исполнитель · Яндекс Музыка", s.title, round = true, img = s.img) { onOpen(Detail.YmArtistPage(s.id, s.title, s.img)) }
-            }
-            if (showAr && grid && filter < 0 && myArtists.isNotEmpty()) item { SectionTitle("Исполнители") }
-            if (showAr && grid) item { ArtistGrid(myArtists) { onOpen(Detail.Artist(it.first)) } }
-            if (showAr && !grid) items(myArtists, key = { "a:" + it.first }) { a ->
-                LibRow(a.first, "Артист", a.first, round = true, img = artistImg(a.first, a.second)) { onOpen(Detail.Artist(a.first)) }
+            if (showPeople) {
+                item { SectionTitle("Люди") }
+                item {
+                    TileGrid(
+                        listOf(LibTile("Найти человека", "По нику", "findperson", "", true, Icons.Filled.Search) { findNick = true }) +
+                            Follows.users.map { uid ->
+                                val p = Follows.people[uid]
+                                LibTile(p?.nick?.takeIf { it.isNotEmpty() } ?: "Пользователь", "Подписка", uid, "", true, null, null, p?.avatar.orEmpty()) {
+                                    onOpen(Detail.User(uid, p?.nick.orEmpty()))
+                                }
+                            },
+                    )
+                }
             }
             if (empty) item {
                 Text(
@@ -1514,6 +1511,54 @@ private fun ArtistGrid(list: List<Pair<String, List<Track>>>, onOpen: (Pair<Stri
                 repeat(3 - trio.size) { Spacer(Modifier.weight(1f)) }
             }
         }
+    }
+}
+
+/** Плитка библиотеки: обложка (или градиент с иконкой), название и подпись. */
+private class LibTile(
+    val title: String,
+    val sub: String,
+    val seed: String,
+    val img: String,
+    val round: Boolean,
+    val icon: ImageVector?,
+    val grad: List<Color>? = null,
+    val avatar: String = "",
+    val onClick: () -> Unit,
+)
+
+@Composable
+private fun TileGrid(items: List<LibTile>) {
+    Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        items.chunked(3).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                row.forEach { t -> LibTileView(t, Modifier.weight(1f)) }
+                repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LibTileView(t: LibTile, modifier: Modifier) {
+    Column(modifier.clickable(onClick = t.onClick), horizontalAlignment = Alignment.CenterHorizontally) {
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val side = maxWidth
+            val shape = if (t.round) CircleShape else RoundedCornerShape(12.dp)
+            val g = t.grad
+            if (g != null) {
+                Box(Modifier.size(side).clip(shape).background(Brush.linearGradient(g)), contentAlignment = Alignment.Center) {
+                    t.icon?.let { Icon(it, null, tint = Color.White.copy(alpha = 0.95f), modifier = Modifier.size(side * 0.36f)) }
+                }
+            } else if (t.avatar.isNotBlank()) {
+                AvatarCircle(t.avatar, side)
+            } else {
+                Box(Modifier.size(side).clip(shape)) { Cover(t.seed, side, round = t.round, square = !t.round, icon = t.icon, img = t.img) }
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(t.title, color = TextC, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+        Text(t.sub, color = Mut, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 12.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
     }
 }
 
