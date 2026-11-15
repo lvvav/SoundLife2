@@ -1,5 +1,10 @@
 package app.soundlife
 
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -228,7 +233,24 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit, o
                             animationSpec = infiniteRepeatable(tween(2400), RepeatMode.Reverse), label = "scale",
                         )
                         val sc = if (ps.isPlaying) breathScale else 1f
-                        Box(Modifier.size(side).graphicsLayer { scaleX = sc; scaleY = sc }.clip(RoundedCornerShape(8.dp))) {
+                        // Свайп по обложке: влево — следующий трек, вправо — предыдущий
+                        var dragX by remember { mutableFloatStateOf(0f) }
+                        val shownX by animateFloatAsState(dragX, label = "swipeX")
+                        Box(
+                            Modifier.size(side)
+                                .graphicsLayer { scaleX = sc; scaleY = sc; translationX = shownX }
+                                .pointerInput(Unit) {
+                                    detectHorizontalDragGestures(
+                                        onDragStart = { dragX = 0f },
+                                        onDragCancel = { dragX = 0f },
+                                        onDragEnd = {
+                                            if (dragX > 120f) c.seekToPrevious() else if (dragX < -120f) c.seekToNext()
+                                            dragX = 0f
+                                        },
+                                    ) { _, d -> dragX += d }
+                                }
+                                .clip(RoundedCornerShape(8.dp)),
+                        ) {
                             Cover(ps.title.ifBlank { "SoundLife" }, side, square = true, img = ps.artUrl)
                         }
                     }
