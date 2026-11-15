@@ -112,18 +112,18 @@ private fun HubMain(onAccount: () -> Unit, onPage: (String) -> Unit, onUpdates: 
     val notifState = if (Notifier.canPost(ctx)) "включены" else "выключены"
     val groups = listOf(
         "Аккаунт" to listOf(
-            HubItem("Аккаунт", if (Auth.signedIn) (Auth.account.ifEmpty { "Вход выполнен" }) else "Вход, ник, аватарка", Icons.Filled.Person, onAccount),
+            HubItem("Аккаунт", if (Auth.signedIn) (Auth.account.ifEmpty { "Вход выполнен" }) else "Вход, ник, аватарка", SiteIcons.User, onAccount),
         ),
         "Внешний вид" to listOf(
             HubItem("Тема и акцент", "Салатовый, цвет фона, скругление", Icons.Filled.Palette) { onPage("look") },
         ),
         "Воспроизведение" to listOf(
             HubItem("Воспроизведение", if (Settings.mix) "Смешивать с другими приложениями" else "Обычное", Icons.Filled.PlayArrow) { onPage("play") },
-            HubItem("Трафик и офлайн-режим", "Офлайн-память и экономия трафика", Icons.Filled.LibraryMusic) { onPage("traffic") },
-            HubItem("Качество медиафайлов", "Исходное качество, без сжатия", Icons.Filled.Settings) { onPage("quality") },
+            HubItem("Трафик и офлайн-режим", "Офлайн-память и экономия трафика", SiteIcons.Dl) { onPage("traffic") },
+            HubItem("Качество медиафайлов", "Исходное качество, без сжатия", SiteIcons.Disc) { onPage("quality") },
         ),
         "Связь" to listOf(
-            HubItem("Уведомления", "Сообщения и звонки: $notifState", Icons.Filled.Notifications) { onPage("notif") },
+            HubItem("Уведомления", "Сообщения и звонки: $notifState", SiteIcons.Msg) { onPage("notif") },
             HubItem("Конфиденциальность и приватность", "Медиатека и «что я слушаю»", Icons.Filled.Check) { onPage("privacy") },
             HubItem("Устройства и «Слушать вместе»", "Комнаты и вход по коду", Icons.Filled.Group) { onPage("devices") },
         ),
@@ -138,6 +138,12 @@ private fun HubMain(onAccount: () -> Unit, onPage: (String) -> Unit, onUpdates: 
         ),
     )
     LazyColumn(Modifier.navigationBarsPadding(), contentPadding = PaddingValues(bottom = 24.dp)) {
+        item {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                HubTile("Экономия трафика", "Офлайн-память и загрузка", Modifier.weight(1f)) { onPage("traffic") }
+                HubTile("Приватный режим", "Медиатека и «что я слушаю»", Modifier.weight(1f)) { onPage("privacy") }
+            }
+        }
         groups.forEach { (label, rows) ->
             item(key = "h_$label") { SubHeader(label) }
             items(rows, key = { it.title }) { it ->
@@ -151,8 +157,8 @@ private fun HubMain(onAccount: () -> Unit, onPage: (String) -> Unit, onUpdates: 
                     ) { Icon(it.icon, null, tint = TextC, modifier = Modifier.size(22.dp)) }
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(it.title, color = TextC, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                        Text(it.sub, color = Mut, fontSize = 13.sp, maxLines = 2)
+                        Text(it.title, color = TextC, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                        Text(it.sub, color = Mut, fontSize = 14.sp, maxLines = 2)
                     }
                     Icon(Icons.Filled.ChevronRight, null, tint = Mut)
                 }
@@ -172,34 +178,63 @@ private fun InfoLine(title: String, sub: String, trailing: (@Composable () -> Un
     }
 }
 
+@Composable
+private fun HubTile(title: String, sub: String, modifier: Modifier, onClick: () -> Unit) {
+    Column(modifier.clip(RoundedCornerShape(18.dp)).background(Hover).clickable(onClick = onClick).padding(16.dp)) {
+        Text(title, color = TextC, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(6.dp))
+        Text(sub, color = Mut, fontSize = 14.sp)
+    }
+}
+
 private class HubItem(val title: String, val sub: String, val icon: androidx.compose.ui.graphics.vector.ImageVector, val onClick: () -> Unit)
 
 @Composable
 private fun LookPage() {
+    // Как на сайте: название, цвет фона, цвет акцента (0 = не менять)
     val themes = listOf(
-        "Тёмная" to 0xFF0D0D11L,
-        "Тёмно-серая" to 0xFF121212L,
-        "Синяя" to 0xFF0B1220L,
-        "Розовая" to 0xFF1A0D12L,
-        "Светлая" to 0xFFF5F5F7L,
+        Triple("Тёмная", 0xFF0D0D11L, 0xFFB6FF3AL),
+        Triple("OLED", 0xFF000000L, 0xFFB6FF3AL),
+        Triple("Светлая", 0xFFF5F5F7L, 0xFF5B3DF5L),
+        Triple("Ч/Б светлая", 0xFFFFFFFFL, 0xFF000000L),
+        Triple("Ч/Б тёмная", 0xFF121212L, 0xFFFFFFFFL),
+        Triple("Жёлтая", 0xFF17130AL, 0xFFFFD60AL),
+        Triple("Синяя", 0xFF0B1220L, 0xFF4DA3FFL),
+        Triple("Розовая", 0xFF1A0D12L, 0xFFFF5FA2L),
+        Triple("Лес", 0xFF0B140FL, 0xFF5ADB8AL),
+        Triple("Закат", 0xFF1A0E0AL, 0xFFFF7F50L),
+        Triple("Звук", 0xFF0B0A14L, 0xFF8F6BFFL),
+        Triple("Своя", 0xFF000000L, 0xFFFFFFFFL),
     )
     var themeIx by remember { mutableStateOf(0) }
     LazyColumn(Modifier.navigationBarsPadding(), contentPadding = PaddingValues(bottom = 24.dp)) {
         item { SubHeader("Тема") }
         item {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                themes.forEachIndexed { i, (name, argb) ->
-                    Column(
-                        Modifier.weight(1f).clickable { themeIx = i; app.soundlife.Palette.set(argb) },
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Box(
-                            Modifier.fillMaxWidth().height(64.dp).clip(RoundedCornerShape(12.dp))
-                                .background(Color(argb))
-                                .border(if (themeIx == i) 2.dp else 1.dp, if (themeIx == i) Acc else Line, RoundedCornerShape(12.dp)),
-                        )
-                        Spacer(Modifier.height(6.dp))
-                        Text(name, color = Mut, fontSize = 12.sp, maxLines = 1)
+            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                themes.withIndex().toList().chunked(4).forEach { row ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        row.forEach { (i, t) ->
+                            val (name, bg, dot) = t
+                            Column(
+                                Modifier.weight(1f).clickable {
+                                    themeIx = i
+                                    app.soundlife.Palette.set(bg)
+                                    Settings.setAccentArgb(dot)
+                                },
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                Box(
+                                    Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(16.dp)).background(Color(bg))
+                                        .border(if (themeIx == i) 3.dp else 1.dp, if (themeIx == i) Acc else Line, RoundedCornerShape(16.dp)),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Box(Modifier.size(26.dp).clip(CircleShape).background(Color(dot)))
+                                }
+                                Spacer(Modifier.height(6.dp))
+                                Text(name, color = Mut, fontSize = 14.sp, maxLines = 1)
+                            }
+                        }
+                        repeat(4 - row.size) { Spacer(Modifier.weight(1f)) }
                     }
                 }
             }
