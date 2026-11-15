@@ -210,12 +210,12 @@ internal fun MiniPlayer(ps: PlayerUi, c: MediaController, onOpen: () -> Unit) {
                 state = GlassState,
                 shape = glassShape,
                 style = HazeStyle(
-                    tint = Color.White.copy(alpha = 0.10f),
+                    tint = Color.White.copy(alpha = 0.06f),
                     blurRadius = 28.dp,
                     noiseFactor = 0.04f,
                 ),
             )
-            .background(if (Settings.accentFromCover && coverArgbNow != null) Color(lerp(Color(coverArgbNow!!), Color.Black, 0.45f).toArgb()) else Panel.copy(alpha = 0.45f))
+            .background(Panel.copy(alpha = 0.6f))
             .background(glassBrush)
             .border(1.dp, Color.White.copy(alpha = 0.12f), glassShape),
     ) {
