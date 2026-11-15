@@ -47,6 +47,36 @@ object Lastfm {
         return Info(listeners, plays, tags)
     }
 
+    /** Данные артиста: слушатели и реальный топ треков по прослушиваниям. */
+    class ArtistInfo(val listeners: Long, val topTracks: List<String>)
+    private val artistCache = HashMap<String, ArtistInfo>()
+
+    /** Вызывать в фоновом потоке. null — нет данных или сеть недоступна. */
+    fun artist(name: String): ArtistInfo? {
+        if (!enabled || name.isBlank() || name == "—") return null
+        val key = name.lowercase()
+        synchronized(artistCache) { artistCache[key]?.let { return it } }
+        val info = (try { fetchArtist(name) } catch (e: Exception) { null }) ?: return null
+        synchronized(artistCache) { artistCache[key] = info }
+        return info
+    }
+
+    private fun fetchArtist(name: String): ArtistInfo? {
+        val base = "https://ws.audioscrobbler.com/2.0/?api_key=${BuildConfig.LASTFM_KEY}&format=json&autocorrect=1&artist=${enc(name)}"
+        val a = JSONObject(httpGet("$base&method=artist.getInfo", "application/json")).optJSONObject("artist")
+        val listeners = a?.optJSONObject("stats")?.optString("listeners", "0")?.toLongOrNull() ?: 0L
+        val tt = JSONObject(httpGet("$base&method=artist.getTopTracks&limit=10", "application/json"))
+            .optJSONObject("toptracks")?.opt("track")
+        val arr = when (tt) {
+            is JSONArray -> tt
+            is JSONObject -> JSONArray().put(tt)
+            else -> JSONArray()
+        }
+        val names = (0 until arr.length()).mapNotNull { arr.optJSONObject(it)?.optString("name")?.takeIf { n -> n.isNotBlank() } }
+        if (names.isEmpty() && listeners == 0L) return null
+        return ArtistInfo(listeners, names)
+    }
+
     /** 1,2 млн / 343 тыс. — как на сайте. */
     fun fmt(n: Long): String {
         for ((unit, name) in listOf(1e9 to "млрд", 1e6 to "млн", 1e3 to "тыс.")) {

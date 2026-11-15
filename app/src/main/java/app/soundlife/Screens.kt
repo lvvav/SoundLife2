@@ -1180,6 +1180,15 @@ private fun ArtistPage(
     var morePop by remember(d) { mutableStateOf(false) }
     var allRel by remember(d) { mutableStateOf(false) }
     val heroImg = artistImg(d.name, info.tracks)
+    val lfm by androidx.compose.runtime.produceState<Lastfm.ArtistInfo?>(null, d.name) {
+        value = withContext(Dispatchers.IO) { Lastfm.artist(d.name) }
+    }
+    // Популярное: порядок по реальным прослушиваниям (Last.fm), остальные треки — в конце
+    val popular = remember(info.tracks, lfm) {
+        val rank = lfm?.topTracks?.mapIndexed { i, n -> n.lowercase() to i }?.toMap().orEmpty()
+        info.tracks.sortedBy { rank[it.title.lowercase()] ?: Int.MAX_VALUE }
+    }
+    val heroSub = lfm?.listeners?.takeIf { it > 0 }?.let { "Слушателей: ${Lastfm.fmt(it)}" } ?: info.sub
     val scrolled by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 } }
     val barAlpha by androidx.compose.animation.core.animateFloatAsState(if (scrolled) 1f else 0f, label = "artistBar")
     val latest = albums.filter { it.year.isNotBlank() }.maxByOrNull { it.year }
@@ -1197,7 +1206,7 @@ private fun ArtistPage(
                     Column(Modifier.align(Alignment.BottomStart).padding(start = 16.dp, bottom = 10.dp)) {
                         Text(d.name, color = TextC, fontSize = 46.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-1).sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         Spacer(Modifier.height(6.dp))
-                        Text(info.sub, color = Mut, fontSize = 15.sp)
+                        Text(heroSub, color = Mut, fontSize = 15.sp)
                     }
                 }
             }
@@ -1211,22 +1220,22 @@ private fun ArtistPage(
                         Text(if (info.followed == true) "Подписки" else "Подписаться", color = TextC, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.weight(1f))
-                    IconButton(onClick = { c?.playTracks(info.tracks, Random.nextInt(info.tracks.size.coerceAtLeast(1)), true) }) {
+                    IconButton(onClick = { c?.playTracks(popular, Random.nextInt(popular.size.coerceAtLeast(1)), true) }) {
                         Icon(Icons.Filled.Shuffle, "Перемешать", tint = Acc, modifier = Modifier.size(28.dp))
                     }
                     Spacer(Modifier.width(8.dp))
                     Box(
-                        Modifier.size(58.dp).clip(CircleShape).background(Acc).clickable { c?.playTracks(info.tracks, 0, false) },
+                        Modifier.size(58.dp).clip(CircleShape).background(Acc).clickable { c?.playTracks(popular, 0, false) },
                         contentAlignment = Alignment.Center,
                     ) { Icon(Icons.Filled.PlayArrow, "Играть", tint = OnAcc, modifier = Modifier.size(32.dp)) }
                 }
             }
             // Популярное: номер, обложка, название и альбом, ⋮
             item { Text("Популярное", color = TextC, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.4).sp, modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 6.dp)) }
-            itemsIndexed(info.tracks.take(popCount), key = { _, t -> "pop:" + t.path }) { i, t ->
+            itemsIndexed(popular.take(popCount), key = { _, t -> "pop:" + t.path }) { i, t ->
                 val playing = ps.mediaId == t.path
                 Row(
-                    Modifier.fillMaxWidth().clickable { c?.playTracks(info.tracks, i) }.padding(start = 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+                    Modifier.fillMaxWidth().clickable { c?.playTracks(popular, i) }.padding(start = 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text("${i + 1}", color = if (playing) Acc else Mut, fontSize = 16.sp, modifier = Modifier.width(26.dp))
@@ -1238,7 +1247,7 @@ private fun ArtistPage(
                     }
                 }
             }
-            if (info.tracks.size > 5) item {
+            if (popular.size > 5) item {
                 Box(Modifier.fillMaxWidth().padding(vertical = 10.dp), contentAlignment = Alignment.Center) {
                     Box(
                         Modifier.clip(RoundedCornerShape(50)).border(1.dp, Color(0x55FFFFFF), RoundedCornerShape(50))
