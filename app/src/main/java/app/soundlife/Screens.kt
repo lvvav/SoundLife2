@@ -183,7 +183,7 @@ private class AlbumInfo(val name: String, val artist: String, val tracks: List<T
 }
 
 /** Каталог: треки, сгруппированные по артистам и альбомам (альбом = папка в music/). */
-private class Catalog(val tracks: List<Track>) {
+internal class Catalog(val tracks: List<Track>) {
     val artists: List<Pair<String, List<Track>>> =
         tracks.groupBy { it.artist }.toList().sortedBy { it.first.lowercase() }
     val albums: List<AlbumInfo> =
