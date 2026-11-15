@@ -18,6 +18,7 @@ import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -327,14 +328,24 @@ public class MainActivity extends Activity {
 
     private void loadLocal() {
         ContentResolver cr = getContentResolver();
+        // Обложки альбомов: id альбома -> путь к картинке
+        java.util.HashMap<Long, String> albumArt = new java.util.HashMap<Long, String>();
+        Cursor a = cr.query(MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI,
+                new String[]{MediaStore.Audio.Albums._ID, MediaStore.Audio.Albums.ALBUM_ART}, null, null, null);
+        if (a != null) {
+            while (a.moveToNext()) albumArt.put(a.getLong(0), a.getString(1));
+            a.close();
+        }
         Cursor c = cr.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, null,
                 MediaStore.Audio.Media.IS_MUSIC + " != 0", null, MediaStore.Audio.Media.TITLE);
         if (c == null) return;
         int iTitle = c.getColumnIndex(MediaStore.Audio.Media.TITLE);
         int iArtist = c.getColumnIndex(MediaStore.Audio.Media.ARTIST);
         int iPath = c.getColumnIndex(MediaStore.Audio.Media.DATA);
+        int iAlbum = c.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID);
         while (c.moveToNext()) {
-            localSongs.add(new Song(c.getString(iTitle), c.getString(iArtist), c.getString(iPath)));
+            String art = albumArt.get(c.getLong(iAlbum));
+            localSongs.add(new Song(c.getString(iTitle), c.getString(iArtist), c.getString(iPath), art));
         }
         c.close();
         if (localSongs.isEmpty()) {
@@ -372,26 +383,39 @@ public class MainActivity extends Activity {
 
         public View getView(int position, View convertView, ViewGroup parent) {
             TextView[] lines;
+            ImageView cover;
             View row = convertView;
             if (row == null) {
                 LinearLayout box = new LinearLayout(MainActivity.this);
-                box.setOrientation(LinearLayout.VERTICAL);
-                box.setPadding(dp(14), dp(10), dp(14), dp(10));
+                box.setOrientation(LinearLayout.HORIZONTAL);
+                box.setGravity(Gravity.CENTER_VERTICAL);
+                box.setPadding(dp(10), dp(8), dp(14), dp(8));
+                cover = new ImageView(MainActivity.this);
+                cover.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                cover.setBackgroundColor(0xFF222222);
+                box.addView(cover, new LinearLayout.LayoutParams(dp(48), dp(48)));
+                LinearLayout texts = new LinearLayout(MainActivity.this);
+                texts.setOrientation(LinearLayout.VERTICAL);
+                texts.setPadding(dp(12), 0, 0, 0);
                 TextView t1 = text("", 16, TEXT);
                 TextView t2 = text("", 13, MUTED);
                 t1.setSingleLine(true);
                 t1.setEllipsize(TextUtils.TruncateAt.END);
                 t2.setSingleLine(true);
                 t2.setEllipsize(TextUtils.TruncateAt.END);
-                box.addView(t1);
-                box.addView(t2);
+                texts.addView(t1);
+                texts.addView(t2);
+                box.addView(texts, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
                 lines = new TextView[]{t1, t2};
-                box.setTag(lines);
+                box.setTag(new Object[]{lines, cover});
                 row = box;
             } else {
-                lines = (TextView[]) row.getTag();
+                Object[] tag = (Object[]) row.getTag();
+                lines = (TextView[]) tag[0];
+                cover = (ImageView) tag[1];
             }
             Song s = shown.get(position);
+            Covers.show(cover, s.art);
             int cur = PlayerService.current;
             boolean playingThis = cur >= 0 && cur < PlayerService.songs.size()
                     && PlayerService.songs.get(cur).path.equals(s.path);

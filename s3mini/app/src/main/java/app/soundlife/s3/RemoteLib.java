@@ -21,6 +21,20 @@ final class RemoteLib {
         JSONArray tree = new JSONObject(json).optJSONArray("tree");
         List<Song> songs = new ArrayList<Song>();
         if (tree == null) return songs;
+        // Обложка папки: файл cover / folder / artwork с картинкой
+        java.util.Map<String, String> covers = new java.util.HashMap<String, String>();
+        for (int i = 0; i < tree.length(); i++) {
+            JSONObject o = tree.getJSONObject(i);
+            String path = o.optString("path");
+            if (!"blob".equals(o.optString("type")) || !path.startsWith(FOLDER)) continue;
+            String lower = path.toLowerCase();
+            String name = path.substring(path.lastIndexOf('/') + 1);
+            String base = name.contains(".") ? name.substring(0, name.lastIndexOf('.')).toLowerCase() : "";
+            boolean image = lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".png") || lower.endsWith(".webp");
+            if (image && (base.equals("cover") || base.equals("folder") || base.equals("artwork"))) {
+                covers.put(path.substring(0, path.lastIndexOf('/') + 1), url(path));
+            }
+        }
         for (int i = 0; i < tree.length(); i++) {
             JSONObject o = tree.getJSONObject(i);
             String path = o.optString("path");
@@ -29,7 +43,8 @@ final class RemoteLib {
             if (!(lower.endsWith(".mp3") || lower.endsWith(".m4a") || lower.endsWith(".ogg"))) continue;
             String name = path.substring(path.lastIndexOf('/') + 1);
             String title = name.substring(0, name.lastIndexOf('.'));
-            songs.add(new Song(title, "", url(path)));
+            String folder = path.substring(0, path.lastIndexOf('/') + 1);
+            songs.add(new Song(title, "", url(path), covers.get(folder)));
         }
         return songs;
     }
