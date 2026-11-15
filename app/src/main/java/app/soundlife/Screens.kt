@@ -391,6 +391,8 @@ fun SoundLifeApp(controller: MediaController?) {
         }
     }
     }
+    // Тап по пустой области справа от меню закрывает его
+    if (drawer.isOpen) Box(Modifier.fillMaxSize().padding(start = 300.dp).clickable { drawerScope.launch { drawer.close() } })
     if (showFull && controller != null) FullPlayer(ps, controller, onClose = { showFull = false }, onOpenDetail = { d -> showFull = false; openD(d) })
     if (showSettings) SettingsHub { showSettings = false }
     if (showStatsApp) StatsDialog { showStatsApp = false }
