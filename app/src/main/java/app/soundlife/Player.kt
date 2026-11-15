@@ -135,6 +135,14 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit, o
             val rows: List<Pair<String, () -> Unit>> = buildList {
                 if (albumName.isNotBlank()) add("Перейти к альбому" to { showMenu = false; onClose(); onOpenDetail(Detail.Album(albumName)) })
                 if (ps.artist.isNotBlank()) add("Перейти к артисту" to { showMenu = false; onClose(); onOpenDetail(Detail.Artist(ps.artist)) })
+                add("Скорость: " + speedLabel(c.playbackParameters.speed) to {
+                    showMenu = false
+                    c.setPlaybackSpeed(nextSpeed(c.playbackParameters.speed))
+                })
+                add((if (SleepTimer.minutes > 0) "Таймер сна: ${SleepTimer.minutes} мин" else "Таймер сна: выкл") to {
+                    showMenu = false
+                    SleepTimer.set(c, SleepTimer.next(SleepTimer.minutes))
+                })
                 add("Поделиться ссылкой" to {
                     showMenu = false
                     val id = ps.mediaId.orEmpty()
@@ -658,4 +666,19 @@ internal fun AddToPlaylistDialog() {
             }
         }
     }
+}
+
+private val SPEEDS = listOf(1f, 1.25f, 1.5f, 2f, 0.75f)
+
+private fun nextSpeed(s: Float): Float {
+    val i = SPEEDS.indexOfFirst { kotlin.math.abs(it - s) < 0.01f }
+    return SPEEDS[(i + 1) % SPEEDS.size]
+}
+
+private fun speedLabel(s: Float): String = when {
+    kotlin.math.abs(s - 0.75f) < 0.01f -> "0,75x"
+    kotlin.math.abs(s - 1.25f) < 0.01f -> "1,25x"
+    kotlin.math.abs(s - 1.5f) < 0.01f -> "1,5x"
+    kotlin.math.abs(s - 2f) < 0.01f -> "2x"
+    else -> "1x"
 }

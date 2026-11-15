@@ -493,6 +493,30 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
             }
         }
         item {
+            // «Слушаем дальше»: последний трек и место, где остановились
+            val ctxC = LocalContext.current
+            val cont = remember { Resume.last(ctxC) }
+            if (cont != null && cont.title.isNotBlank()) {
+                Column(Modifier.fillMaxWidth()) {
+                    Text("Слушаем дальше", color = TextC, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.4).sp,
+                        modifier = Modifier.padding(start = 16.dp, top = 28.dp, end = 16.dp, bottom = 12.dp))
+                    Row(
+                        Modifier.fillMaxWidth().clickable { c?.play() }.padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(Modifier.clip(RoundedCornerShape(8.dp))) { Cover(cont.title, 56.dp, img = cont.art, square = true) }
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(cont.title, color = TextC, fontSize = 16.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            val sec = cont.posMs / 1000
+                            Text("${cont.artist} · на ${sec / 60}:${String.format("%02d", sec % 60)}", color = Mut, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                        Icon(Icons.Filled.PlayArrow, "Продолжить", tint = Acc, modifier = Modifier.size(32.dp))
+                    }
+                }
+            }
+        }
+        item {
             val recentTop = remember(cat) { Stats.recentKeys(3).mapNotNull { k -> cat.tracks.firstOrNull { it.path == k } } }
             Column(Modifier.fillMaxWidth()) {
                 Text(
@@ -514,7 +538,7 @@ private fun HomeScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: 
             }
         }
         if (albums.isNotEmpty() && (homeTab == 0 || homeTab == 2)) {
-            item { SeeAllHeader("Альбомы") { showAllAlbums = true } }
+            item { SeeAllHeader("Альбомы для тебя") { showAllAlbums = true } }
             item {
                 LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     items(albums.take(3), key = { it.name }) { a -> AlbumCard(a) { onOpen(Detail.Album(a.name)) } }

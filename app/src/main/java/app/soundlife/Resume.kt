@@ -73,4 +73,21 @@ object Resume {
             // нет сохранения или оно повреждено: начинаем с пустого плеера
         }
     }
+
+    /** Последний трек из сохранения для блока «Слушаем дальше». */
+    class Last(val title: String, val artist: String, val art: String, val posMs: Long)
+
+    fun last(ctx: Context): Last? {
+        return try {
+            val raw = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY, null) ?: return null
+            val obj = JSONObject(raw)
+            val arr = obj.getJSONArray("items")
+            if (arr.length() == 0) return null
+            val i = obj.optInt("index", 0).coerceIn(0, arr.length() - 1)
+            val o = arr.getJSONObject(i)
+            Last(o.optString("t"), o.optString("a"), o.optString("art"), obj.optLong("pos", 0L))
+        } catch (e: Exception) {
+            null
+        }
+    }
 }
