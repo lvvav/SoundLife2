@@ -110,6 +110,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.foundation.layout.Arrangement
@@ -630,9 +632,9 @@ private fun AlbumCard(a: AlbumInfo, onClick: () -> Unit) {
 private fun SearchScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen: (Detail) -> Unit) {
     var q by rememberSaveable { mutableStateOf("") }
     var srcTab by rememberSaveable { mutableIntStateOf(0) }
-    val showL = srcTab == 0 || srcTab == 1
-    val showI = srcTab == 0 || srcTab == 2
-    val showY = srcTab == 0 || srcTab == 3
+    val showL = srcTab == 0
+    val showI = srcTab == 1
+    val showY = srcTab == 2
     val query = q.trim().lowercase()
     /** Результаты iTunes (30-секундные отрывки). Запрос после паузы 450 мс, от 3 символов. */
     var itRes by remember { mutableStateOf<List<Track>>(emptyList()) }
@@ -682,33 +684,36 @@ private fun SearchScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen
             )
             if (q.isNotEmpty()) IconButton(onClick = { q = "" }) { Icon(Icons.Filled.Close, "Очистить", tint = Color(0xFF121212)) }
         }
+        SourceSwitch(listOf("GitHub", "iTunes", "Яндекс Музыка"), srcTab) { srcTab = it }
         if (query.isEmpty()) {
             Text("Жанры", color = TextC, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.4).sp, modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp))
             val genres = listOf(
-                Triple("Рок", Color(0xFF5E8A0A), 0),
-                Triple("Электроника", Color(0xFF4A7C90), 1),
-                Triple("Хип-хоп", Color(0xFFB5600E), 2),
-                Triple("Поп", Color(0xFF4F9BF5), 3),
-                Triple("Джаз", Color(0xFFD8148C), 4),
-                Triple("Классика", Color(0xFF5E8A0A), 5),
-                Triple("Инди", Color(0xFF8A00E6), 6),
-                Triple("Альтернатива", Color(0xFFE03A00), 7),
+                "Рок" to Color(0xFF5E8A0A),
+                "Электроника" to Color(0xFF4A7C90),
+                "Хип-хоп" to Color(0xFFB5600E),
+                "Поп" to Color(0xFF4F9BF5),
+                "Джаз" to Color(0xFFD8148C),
+                "Классика" to Color(0xFF00695C),
+                "Инди" to Color(0xFF8A00E6),
+                "Альтернатива" to Color(0xFFE03A00),
             )
-            val artPool = remember(cat) { cat.tracks.filter { it.img.isNotBlank() } }
+            // Каждая плитка берёт свою обложку альбома, без повторов
+            val artPool = remember(cat) { cat.albums.map { it.img }.filter { it.isNotBlank() }.distinct() }
             Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                genres.chunked(2).forEach { row ->
+                genres.withIndex().toList().chunked(2).forEach { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        row.forEach { (name, color, idx) ->
-                            val art = artPool.getOrNull(idx * 5)?.img.orEmpty()
+                        row.forEach { (idx, pair) ->
+                            val (name, color) = pair
+                            val art = artPool.getOrNull(idx).orEmpty()
                             Box(
-                                Modifier.weight(1f).height(116.dp).clip(RoundedCornerShape(16.dp))
+                                Modifier.weight(1f).height(120.dp).clip(RoundedCornerShape(14.dp))
                                     .background(color)
                                     .clickable { q = name }
                                     .padding(14.dp),
                             ) {
-                                Text(name, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 24.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth(0.6f))
-                                Box(Modifier.align(Alignment.BottomEnd).graphicsLayer { rotationZ = 18f }.clip(RoundedCornerShape(10.dp))) {
-                                    Cover(name, 84.dp, square = true, img = art)
+                                Text(name, color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 22.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth(0.55f))
+                                Box(Modifier.align(Alignment.BottomEnd).offset(x = 12.dp, y = 14.dp).graphicsLayer { rotationZ = 20f }.clip(RoundedCornerShape(10.dp))) {
+                                    Cover(name, 88.dp, square = true, img = art)
                                 }
                             }
                         }
@@ -724,15 +729,6 @@ private fun SearchScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen
         if (ar.isEmpty() && al.isEmpty() && tr.isEmpty() && itRes.isEmpty() && ymRes.isEmpty() && ymAl.isEmpty() && ymAr.isEmpty()) {
             Text("Ничего не найдено", color = Mut, modifier = Modifier.padding(horizontal = 16.dp))
             return@Column
-        }
-        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            itemsIndexed(listOf("Все", "GitHub", "iTunes", "Яндекс")) { i, label ->
-                FilterChip(
-                    selected = srcTab == i, onClick = { srcTab = i }, label = { Text(label) },
-                    colors = FilterChipDefaults.filterChipColors(containerColor = Hover, labelColor = TextC, selectedContainerColor = Acc, selectedLabelColor = OnAcc),
-                    border = null,
-                )
-            }
         }
         LazyColumn(contentPadding = PaddingValues(bottom = 16.dp + LocalBarInset.current)) {
             if (ar.isNotEmpty() && showL) {
@@ -844,12 +840,15 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
                 Text("Недавние", color = TextC, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                 Icon(Icons.AutoMirrored.Filled.List, "Список", tint = Mut, modifier = Modifier.size(24.dp))
             }
-            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                GradTile("Любимые", plural(favCount), listOf(Color(0xFFB721FF), Color(0xFF21D4FD)), Icons.Filled.Favorite, Modifier.weight(1f)) { onOpen(Detail.Liked) }
-                GradTile("Хочу послушать", plural(Wishes.list.size), listOf(Color(0xFFFF8A00), Color(0xFFE52E71)), Icons.Filled.Add, Modifier.weight(1f)) { onOpen(Detail.Wish) }
-            }
-            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
-                GradTile("Новое в хранилище", "Последние 50", listOf(Color(0xFF11998E), Color(0xFF38EF7D)), Icons.Filled.NewReleases, Modifier.fillMaxWidth()) { showNewest = true }
+            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SquareTile("Любимые", plural(favCount), listOf(Color(0xFFB721FF), Color(0xFF21D4FD)), Icons.Filled.Favorite, Modifier.weight(1f)) { onOpen(Detail.Liked) }
+                    SquareTile("Хочу послушать", plural(Wishes.list.size), listOf(Color(0xFFFF8A00), Color(0xFFE52E71)), Icons.Filled.Add, Modifier.weight(1f)) { onOpen(Detail.Wish) }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SquareTile("Новое в хранилище", "Последние 50", listOf(Color(0xFF11998E), Color(0xFF38EF7D)), Icons.Filled.NewReleases, Modifier.weight(1f)) { showNewest = true }
+                    Spacer(Modifier.weight(1f))
+                }
             }
         }
         LazyColumn(contentPadding = PaddingValues(bottom = 16.dp + LocalBarInset.current)) {
@@ -1534,6 +1533,34 @@ private fun AlbumGrid(list: List<AlbumInfo>, onOpen: (AlbumInfo) -> Unit) {
                 }
                 if (pair.size == 1) Spacer(Modifier.weight(1f))
             }
+        }
+    }
+}
+
+@Composable
+private fun SourceSwitch(labels: List<String>, selected: Int, onSelect: (Int) -> Unit) {
+    Row(
+        Modifier.padding(horizontal = 16.dp, vertical = 8.dp).clip(RoundedCornerShape(50)).background(Color(0xFF15151A)).padding(4.dp),
+    ) {
+        labels.forEachIndexed { i, label ->
+            val on = i == selected
+            Box(
+                Modifier.clip(RoundedCornerShape(50)).background(if (on) Acc else Color.Transparent)
+                    .clickable { onSelect(i) }.padding(horizontal = 18.dp, vertical = 10.dp),
+            ) { Text(label, color = if (on) OnAcc else Mut, fontSize = 15.sp, fontWeight = FontWeight.Bold) }
+        }
+    }
+}
+
+@Composable
+private fun SquareTile(title: String, sub: String, colors: List<Color>, icon: ImageVector, modifier: Modifier, onClick: () -> Unit) {
+    Box(
+        modifier.aspectRatio(1.25f).clip(RoundedCornerShape(14.dp)).background(Brush.linearGradient(colors)).clickable(onClick = onClick).padding(14.dp),
+    ) {
+        Icon(icon, null, tint = Color.White.copy(alpha = 0.9f), modifier = Modifier.size(26.dp).align(Alignment.TopStart))
+        Column(Modifier.align(Alignment.BottomStart)) {
+            Text(title, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(sub, color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp, maxLines = 1)
         }
     }
 }
