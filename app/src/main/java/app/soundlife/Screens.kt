@@ -219,9 +219,9 @@ private fun plural(n: Int): String {
 }
 
 private enum class NavTab(val label: String, val on: ImageVector, val off: ImageVector) {
-    Home("Главная", Icons.Filled.Home, Icons.Outlined.HomeOutlined),
-    Search("Поиск", Icons.Filled.Search, Icons.Outlined.SearchOutlined),
-    Library("Медиатека", Icons.Filled.LibraryMusic, Icons.Outlined.LibraryMusicOutlined),
+    Home("Главная", SiteIcons.Lib, SiteIcons.Lib),
+    Search("Поиск", SiteIcons.Search, SiteIcons.Search),
+    Library("Медиатека", SiteIcons.Disc, SiteIcons.Disc),
 }
 
 // ───────────────────────── каркас приложения ─────────────────────────
