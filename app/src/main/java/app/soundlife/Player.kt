@@ -236,7 +236,7 @@ internal fun FullPlayer(ps: PlayerUi, c: MediaController, onClose: () -> Unit, o
                         ) { tt ->
                             Text(tt, color = TextC, fontSize = 24.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
-                        Text(ps.artist, color = Mut, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(ps.artist, color = Mut, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.clickable(enabled = ps.artist.isNotBlank()) { onOpenDetail(Detail.Artist(ps.artist)) })
                     }
                     LikeButton(ps.mediaId)
                 }

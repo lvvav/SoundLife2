@@ -192,7 +192,7 @@ internal val LocalBarInset = compositionLocalOf { 0.dp }
 internal val GlassState = HazeState()
 
 @Composable
-internal fun MiniPlayer(ps: PlayerUi, c: MediaController, onOpen: () -> Unit) {
+internal fun MiniPlayer(ps: PlayerUi, c: MediaController, onOpen: () -> Unit, onArtist: () -> Unit = {}) {
     val ctx = LocalContext.current
     val coverArgbNow by produceState<Long?>(null, ps.artUrl) {
         value = null
@@ -244,7 +244,7 @@ internal fun MiniPlayer(ps: PlayerUi, c: MediaController, onOpen: () -> Unit) {
                     AnimatedContent(targetState = ps.title, transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(150)) }, label = "miniTitle") { tt ->
                         Text(tt, color = TextC, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     }
-                    Text(ps.artist, color = Mut, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 13.sp)
+                    Text(ps.artist, color = Mut, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 13.sp, modifier = Modifier.clickable(enabled = ps.artist.isNotBlank(), onClick = onArtist))
                 }
                 IconButton(onClick = { ps.mediaId?.let { Favorites.toggle(it) } }) {
                     Icon(Icons.Filled.Favorite, "В любимое", tint = if (liked) Acc else Mut, modifier = Modifier.size(22.dp))

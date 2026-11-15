@@ -238,6 +238,10 @@ fun SoundLifeApp(controller: MediaController?) {
     var tabIx by rememberSaveable { mutableIntStateOf(0) }
     var detail by remember { mutableStateOf<Detail?>(null) }
     var showFull by remember { mutableStateOf(false) }
+    // История переходов: «назад» возвращает на предыдущий экран, а не на главную
+    val history = remember { mutableStateListOf<Detail>() }
+    fun openD(d: Detail?) { detail?.let { history.add(it) }; detail = d }
+    fun goBack() { detail = if (history.isEmpty()) null else history.removeAt(history.size - 1) }
     var showSettings by remember { mutableStateOf(false) }
     var showStatsApp by remember { mutableStateOf(false) }
     var showRecentApp by remember { mutableStateOf(false) }
@@ -255,7 +259,7 @@ fun SoundLifeApp(controller: MediaController?) {
     }
 
     val ps = rememberPlayerState(controller)
-    BackHandler(enabled = detail != null) { detail = null }
+    BackHandler(enabled = detail != null) { goBack() }
 
     val drawer = rememberDrawerState(DrawerValue.Closed)
     val drawerScope = rememberCoroutineScope()
@@ -269,7 +273,7 @@ fun SoundLifeApp(controller: MediaController?) {
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)
                         .clip(RoundedCornerShape(18.dp)).background(Hover)
-                        .clickable { close(); Auth.userId()?.let { detail = Detail.User(it, Profile.nick) } }
+                        .clickable { close(); Auth.userId()?.let { openD(Detail.User(it, Profile.nick)) } }
                         .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -281,7 +285,7 @@ fun SoundLifeApp(controller: MediaController?) {
                     }
                 }
                 Spacer(Modifier.height(4.dp))
-                DrawerRow(SiteIcons.Msg, "Сообщения") { close(); detail = Detail.Inbox }
+                DrawerRow(SiteIcons.Msg, "Сообщения") { close(); openD(Detail.Inbox) }
                 DrawerRow(SiteIcons.Chart, "Статистика прослушивания") { close(); showStatsApp = true }
                 DrawerRow(SiteIcons.Clock, "Недавние") { close(); showRecentApp = true }
                 DrawerRow(SiteIcons.News, "Обновления") { close(); showSettings = true }
@@ -298,13 +302,13 @@ fun SoundLifeApp(controller: MediaController?) {
                     visible = ps.mediaId != null && controller != null,
                     enter = androidx.compose.animation.slideInVertically(tween(320)) { it } + androidx.compose.animation.fadeIn(tween(320)),
                     exit = androidx.compose.animation.slideOutVertically(tween(260)) { it } + androidx.compose.animation.fadeOut(tween(200)),
-                ) { if (controller != null) MiniPlayer(ps, controller) { showFull = true } }
+                ) { if (controller != null) MiniPlayer(ps, controller, onOpen = { showFull = true }, onArtist = { openD(Detail.Artist(ps.artist)) }) }
                 NavigationBar(containerColor = Bg, tonalElevation = 0.dp) {
                     NavTab.entries.forEach { t ->
                         val sel = tabIx == t.ordinal
                         NavigationBarItem(
                             selected = sel,
-                            onClick = { tabIx = t.ordinal; detail = null },
+                            onClick = { tabIx = t.ordinal; history.clear(); detail = null },
                             icon = {
                                 val iconScale by animateFloatAsState(if (sel) 1.12f else 1f, label = "navIcon")
                                 Icon(if (sel) t.on else t.off, t.label, modifier = Modifier.graphicsLayer { scaleX = iconScale; scaleY = iconScale })
@@ -346,20 +350,20 @@ fun SoundLifeApp(controller: MediaController?) {
                         if (d is Detail.Thread) {
                             ThreadScreen(d, onBack = { detail = Detail.Inbox }, tracks = cat.tracks, ps = ps, controller = controller)
                         } else if (d is Detail.Inbox) {
-                            InboxScreen(onBack = { detail = null }, onOpen = { detail = it })
+                            InboxScreen(onBack = { goBack() }, onOpen = { openD(it) })
                         } else if (d is Detail.Collab) {
-                            CollabScreen(d, cat, ps, controller, onBack = { detail = null })
+                            CollabScreen(d, cat, ps, controller, onBack = { goBack() })
                         } else if (d is Detail.User) {
-                            UserScreen(d, onBack = { detail = null }, onOpen = { detail = it })
+                            UserScreen(d, onBack = { goBack() }, onOpen = { openD(it) })
                         } else if (d is Detail.YmAlbumPage || d is Detail.YmArtistPage) {
-                            YmDetailScreen(d, ps, controller, onBack = { detail = null }, onOpen = { detail = it })
+                            YmDetailScreen(d, ps, controller, onBack = { goBack() }, onOpen = { openD(it) })
                         } else {
-                            DetailScreen(d, cat, ps, controller, onBack = { detail = null }, onOpen = { detail = it })
+                            DetailScreen(d, cat, ps, controller, onBack = { goBack() }, onOpen = { openD(it) })
                         }
                     } else when (NavTab.entries[tabIx]) {
-                        NavTab.Home -> HomeScreen(cat, ps, controller, onOpen = { detail = it }, onSettings = { showSettings = true }, onMenu = { drawerScope.launch { drawer.open() } })
-                        NavTab.Search -> SearchScreen(cat, ps, controller, onOpen = { detail = it })
-                        NavTab.Library -> LibraryScreen(cat, controller, onOpen = { detail = it }, onSettings = { showSettings = true })
+                        NavTab.Home -> HomeScreen(cat, ps, controller, onOpen = { openD(it) }, onSettings = { showSettings = true }, onMenu = { drawerScope.launch { drawer.open() } })
+                        NavTab.Search -> SearchScreen(cat, ps, controller, onOpen = { openD(it) })
+                        NavTab.Library -> LibraryScreen(cat, controller, onOpen = { openD(it) }, onSettings = { showSettings = true })
                     }
                     }
                 }
@@ -368,7 +372,7 @@ fun SoundLifeApp(controller: MediaController?) {
         }
     }
     }
-    if (showFull && controller != null) FullPlayer(ps, controller, onClose = { showFull = false }, onOpenDetail = { d -> showFull = false; detail = d })
+    if (showFull && controller != null) FullPlayer(ps, controller, onClose = { showFull = false }, onOpenDetail = { d -> showFull = false; openD(d) })
     if (showSettings) SettingsHub { showSettings = false }
     if (showStatsApp) StatsDialog { showStatsApp = false }
     if (showRecentApp) RecentDialog(readyTracks.orEmpty(), controller) { showRecentApp = false }
@@ -997,6 +1001,17 @@ private fun DetailScreen(d: Detail, cat: Catalog, ps: PlayerUi, c: MediaControll
         ArtistPage(d, info, artistAlbums, ps, c, onBack, onOpen)
         return
     }
+    if (d is Detail.Album) {
+        val album = cat.album(d.name)
+        val at = album?.tracks ?: emptyList()
+        AlbumPage(
+            d, at, album?.artist.orEmpty(), at.firstOrNull { it.year.isNotBlank() }?.year.orEmpty(), d.name in Subs.albums,
+            ps, c, onBack, onOpen,
+            onFollow = { Subs.toggleAlbum(d.name) },
+            onShare = { dctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, d.name), "Поделиться")) },
+        )
+        return
+    }
     LazyColumn(contentPadding = PaddingValues(bottom = 16.dp + LocalBarInset.current)) {
         item {
             Column(
@@ -1289,6 +1304,90 @@ private fun ArtistPage(
             item { Spacer(Modifier.height(16.dp)) }
         }
         // Верхняя панель: кнопки на фото, при прокрутке появляется имя
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                Modifier.size(40.dp).clip(CircleShape).background(Color(0x88000000)).clickable(onClick = onBack),
+                contentAlignment = Alignment.Center,
+            ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад", tint = Color.White) }
+            Text(
+                d.name, color = TextC.copy(alpha = barAlpha), fontSize = 17.sp, fontWeight = FontWeight.Bold,
+                maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).padding(horizontal = 10.dp),
+            )
+            Spacer(Modifier.size(40.dp))
+        }
+    }
+}
+
+// ───────────────────────── Страница альбома (как в Spotify) ─────────────────────────
+
+@Composable
+private fun AlbumPage(
+    d: Detail.Album, tracks: List<Track>, artist: String, year: String, followed: Boolean, ps: PlayerUi, c: MediaController?,
+    onBack: () -> Unit, onOpen: (Detail) -> Unit, onFollow: () -> Unit, onShare: () -> Unit,
+) {
+    val listState = rememberLazyListState()
+    val scrolled by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 } }
+    val barAlpha by androidx.compose.animation.core.animateFloatAsState(if (scrolled) 1f else 0f, label = "albumBar")
+    val coverImg = tracks.firstOrNull { it.img.isNotBlank() }?.img.orEmpty()
+    val artistImgUrl = if (artist.isNotBlank()) artistImg(artist, tracks) else ""
+    Box(Modifier.fillMaxSize().background(Bg)) {
+        LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = 16.dp + LocalBarInset.current)) {
+            item {
+                Column(
+                    Modifier.fillMaxWidth()
+                        .background(Brush.verticalGradient(listOf(Acc.copy(alpha = 0.45f), Bg)))
+                        .padding(horizontal = 16.dp).padding(top = 64.dp, bottom = 8.dp),
+                ) {
+                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Box(Modifier.size(220.dp).clip(RoundedCornerShape(10.dp))) { Cover(d.name, 220.dp, img = coverImg, square = true) }
+                    }
+                    Spacer(Modifier.height(22.dp))
+                    Text(d.name, color = TextC, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.6).sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                    Spacer(Modifier.height(12.dp))
+                    Row(
+                        Modifier.clip(RoundedCornerShape(6.dp)).clickable(enabled = artist.isNotBlank()) { onOpen(Detail.Artist(artist)) },
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Cover(artist, 26.dp, round = true, img = artistImgUrl)
+                        Spacer(Modifier.width(8.dp))
+                        Text(artist, color = TextC, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text(listOf("Альбом", year).filter { it.isNotBlank() }.joinToString(" • "), color = Mut, fontSize = 14.sp)
+                    Spacer(Modifier.height(16.dp))
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            Modifier.size(40.dp).clip(CircleShape).border(1.dp, if (followed) Acc else Mut, CircleShape).clickable(onClick = onFollow),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                if (followed) Icons.Filled.Check else Icons.Filled.Add,
+                                if (followed) "Вы подписаны" else "Подписаться",
+                                tint = if (followed) Acc else Mut, modifier = Modifier.size(20.dp),
+                            )
+                        }
+                        Spacer(Modifier.width(14.dp))
+                        IconButton(onClick = onShare) { Icon(Icons.Filled.Share, "Поделиться", tint = Mut) }
+                        Spacer(Modifier.weight(1f))
+                        IconButton(onClick = { c?.playTracks(tracks, Random.nextInt(tracks.size.coerceAtLeast(1)), true) }) {
+                            Icon(Icons.Filled.Shuffle, "Перемешать", tint = Mut)
+                        }
+                        Spacer(Modifier.width(4.dp))
+                        Box(
+                            Modifier.size(58.dp).clip(CircleShape).background(Acc).clickable { c?.playTracks(tracks, 0, false) },
+                            contentAlignment = Alignment.Center,
+                        ) { Icon(Icons.Filled.PlayArrow, "Играть", tint = OnAcc, modifier = Modifier.size(32.dp)) }
+                    }
+                    Spacer(Modifier.height(10.dp))
+                }
+            }
+            itemsIndexed(tracks, key = { _, t -> t.path }) { i, t ->
+                TrackRow(t, playing = ps.mediaId == t.path) { c?.playTracks(tracks, i) }
+            }
+        }
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
