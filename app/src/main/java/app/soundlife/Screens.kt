@@ -132,6 +132,16 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.ui.layout.offset
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.runtime.mutableStateMapOf
+import kotlin.math.roundToInt
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.togetherWith
@@ -792,6 +802,10 @@ private fun SearchScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen
 @Composable
 private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) -> Unit, onMenu: () -> Unit = {}) {
     var addMenu by remember { mutableStateOf(false) }
+    var libSearch by remember { mutableStateOf(false) }
+    var libQ by rememberSaveable { mutableStateOf("") }
+    val qLow = libQ.trim().lowercase()
+    fun okName(t: String) = qLow.isEmpty() || t.lowercase().contains(qLow)
     var showNewest by remember { mutableStateOf(false) }
     if (showNewest) NewestDialog(cat.tracks, c) { showNewest = false }
     // -1 = всё вместе; 0 плейлисты, 1 альбомы, 2 исполнители, 3 люди. Повторное нажатие на пилюлю возвращает «всё»
@@ -827,19 +841,21 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
             Box(Modifier.size(44.dp).clip(CircleShape).clickable { onMenu() }) { AvatarCircle(Profile.avatar, 44.dp) }
             Spacer(Modifier.width(12.dp))
             Text("Моя медиатека", color = TextC, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.5).sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            IconButton(onClick = { libSearch = !libSearch; if (!libSearch) libQ = "" }) { Icon(Icons.Filled.Search, "Поиск в медиатеке", tint = if (libSearch) Acc else TextC, modifier = Modifier.size(28.dp)) }
             IconButton(onClick = { addMenu = true }) { Icon(Icons.Filled.Add, "Создать", tint = TextC, modifier = Modifier.size(30.dp)) }
         }
-        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            listOf("Плейлисты", "Альбомы", "Артисты", "Люди").forEachIndexed { i, label ->
-                FilterChip(
-                    selected = filter == i, onClick = { filter = if (filter == i) -1 else i },
-                    label = { Text(label, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1) },
-                    modifier = Modifier.weight(1f).height(44.dp),
-                    colors = FilterChipDefaults.filterChipColors(
-                        containerColor = Hover, labelColor = TextC,
-                        selectedContainerColor = Acc, selectedLabelColor = OnAcc,
-                    ),
-                    border = null,
+        FilterPills(listOf("Плейлисты", "Альбомы", "Артисты", "Люди"), filter) { filter = if (filter == it) -1 else it }
+        if (libSearch) {
+            Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp).clip(RoundedCornerShape(50)).background(Color.White).padding(horizontal = 18.dp, vertical = 12.dp)) {
+                BasicTextField(
+                    value = libQ, onValueChange = { libQ = it }, singleLine = true,
+                    textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF121212), fontSize = 16.sp),
+                    cursorBrush = androidx.compose.ui.graphics.SolidColor(Color(0xFF121212)),
+                    modifier = Modifier.fillMaxWidth(),
+                    decorationBox = { inner ->
+                        if (libQ.isEmpty()) Text("Поиск по медиатеке", color = Color(0xFF6A6A6A), fontSize = 16.sp)
+                        inner()
+                    },
                 )
             }
         }
@@ -861,7 +877,7 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
                 item { SectionTitle("Плейлисты") }
                 item {
                     TileGrid(
-                        names.map { n -> LibTile(n, "Плейлист · ${plural(playlistTracks(cat, n).size)}", n, "", false, Icons.Filled.LibraryMusic) { onOpen(Detail.Playlist(n)) } } +
+                        names.filter { okName(it) }.map { n -> LibTile(n, "Плейлист · ${plural(playlistTracks(cat, n).size)}", n, "", false, Icons.Filled.LibraryMusic) { onOpen(Detail.Playlist(n)) } } +
                             Follows.playlists.mapNotNull { id ->
                                 Follows.pubs[id]?.let { pl -> LibTile(pl.name, "Публичный плейлист", "fp:$id", "", false, Icons.Filled.LibraryMusic) { onOpen(Detail.PubPl(pl.id, pl.name, pl.tracks)) } }
                             } +
@@ -873,8 +889,8 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
                 item { SectionTitle("Альбомы") }
                 item {
                     TileGrid(
-                        myAlbums.map { a -> LibTile(a.name, a.artist, a.name, a.img, false, null) { onOpen(Detail.Album(a.name)) } } +
-                            Subs.ym.filter { it.kind == "album" }.map { s -> LibTile(s.title, s.sub, s.title, s.img, false, null) { onOpen(Detail.YmAlbumPage(s.id, s.title, s.sub, s.img)) } },
+                        myAlbums.filter { okName(it.name) }.map { a -> LibTile(a.name, a.artist, a.name, a.img, false, null) { onOpen(Detail.Album(a.name)) } } +
+                            Subs.ym.filter { it.kind == "album" && okName(it.title) }.map { s -> LibTile(s.title, s.sub, s.title, s.img, false, null) { onOpen(Detail.YmAlbumPage(s.id, s.title, s.sub, s.img)) } },
                     )
                 }
             }
@@ -882,8 +898,8 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
                 item { SectionTitle("Артисты") }
                 item {
                     TileGrid(
-                        myArtists.map { a -> LibTile(a.first, "Артист · ${plural(a.second.size)}", a.first, artistImg(a.first, a.second), true, null) { onOpen(Detail.Artist(a.first)) } } +
-                            Subs.ym.filter { it.kind == "artist" }.map { s -> LibTile(s.title, "Исполнитель · Яндекс Музыка", s.title, s.img, true, null) { onOpen(Detail.YmArtistPage(s.id, s.title, s.img)) } },
+                        myArtists.filter { okName(it.first) }.map { a -> LibTile(a.first, "Артист · ${plural(a.second.size)}", a.first, artistImg(a.first, a.second), true, null) { onOpen(Detail.Artist(a.first)) } } +
+                            Subs.ym.filter { it.kind == "artist" && okName(it.title) }.map { s -> LibTile(s.title, "Исполнитель · Яндекс Музыка", s.title, s.img, true, null) { onOpen(Detail.YmArtistPage(s.id, s.title, s.img)) } },
                     )
                 }
             }
@@ -891,8 +907,7 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
                 item { SectionTitle("Люди") }
                 item {
                     TileGrid(
-                        listOf(LibTile("Найти человека", "По нику", "findperson", "", true, Icons.Filled.Search) { findNick = true }) +
-                            Follows.users.map { uid ->
+                        Follows.users.filter { okName(Follows.people[it]?.nick.orEmpty()) }.map { uid ->
                                 val p = Follows.people[uid]
                                 LibTile(p?.nick?.takeIf { it.isNotEmpty() } ?: "Пользователь", "Подписка", uid, "", true, null, null, p?.avatar.orEmpty()) {
                                     onOpen(Detail.User(uid, p?.nick.orEmpty()))
@@ -1538,6 +1553,38 @@ private class LibTile(
     val avatar: String = "",
     val onClick: () -> Unit,
 )
+
+/** Пилюли фильтра: капсула плавно переезжает на выбранную; повторное нажатие (выбрано -1) — капсула тает. */
+@Composable
+private fun FilterPills(labels: List<String>, selected: Int, onSelect: (Int) -> Unit) {
+    val density = LocalDensity.current
+    val boxes = remember { mutableStateMapOf<Int, Pair<Float, Float>>() }
+    val sel = boxes[selected]
+    val px by animateFloatAsState(sel?.first ?: 0f, tween(380), label = "pillX")
+    val pw by animateFloatAsState(sel?.second ?: 0f, tween(380), label = "pillW")
+    val fade by animateFloatAsState(if (selected >= 0) 1f else 0f, tween(260), label = "pillA")
+    Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).clip(RoundedCornerShape(50)).background(Color(0xFF15151A)).padding(4.dp)) {
+        Box(
+            Modifier.offset { IntOffset(px.roundToInt(), 0) }
+                .width(with(density) { pw.toDp() }).height(40.dp)
+                .alpha(fade).clip(RoundedCornerShape(50)).background(Acc),
+        )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(0.dp)) {
+            labels.forEachIndexed { i, label ->
+                val on = i == selected
+                val col by animateColorAsState(if (on) OnAcc else TextC, tween(260), label = "pillC")
+                Box(
+                    Modifier.weight(1f).height(40.dp)
+                        .onGloballyPositioned { c -> boxes[i] = c.positionInParent().x to c.size.width.toFloat() }
+                        .clip(RoundedCornerShape(50)).clickable { onSelect(i) },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(label, color = col, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun TileGrid(items: List<LibTile>) {
