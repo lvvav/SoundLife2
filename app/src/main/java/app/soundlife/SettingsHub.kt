@@ -205,6 +205,9 @@ private fun LookPage() {
             }
         }
         item {
+            ToggleRow("OLED-чёрный фон", "полностью чёрный фон, экономит батарею на экранах OLED", Settings.oled) { Settings.setOled(it) }
+        }
+        item {
             ToggleRow("Тема по обложке", "Акцент сам меняется под обложку играющего трека", Settings.accentFromCover) { Settings.setAutoCover(it) }
         }
         item { SubHeader("Цвет акцента") }

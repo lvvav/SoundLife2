@@ -175,7 +175,7 @@ object Settings {
         privLibrary = p.getBoolean("priv_lib", true)
         privNow = p.getBoolean("priv_now", true)
         siteT = p.getLong("site_set_t", 0L)
-        Palette.set(0xFF0D0D11L)
+        Palette.set(if (p.getBoolean("oled", false)) 0xFF000000L else 0xFF0D0D11L)
         anim = p.getBoolean("f_anim", true)
         adminOn = p.getBoolean("f_admin", false)
     }
@@ -201,6 +201,10 @@ object Settings {
     fun changeMono(v: Boolean) { mono = v; sp.edit().putBoolean(KEY_MONO, v).apply() }
     /** Акцент из обложки: произвольный цвет, сохраняется. */
     fun setAccentArgb(v: Long) { accentCustom = v; sp.edit().putLong("accent_custom", v).apply() }
+
+    /** OLED-чёрный фон: включается в настройках «Внешний вид». */
+    var oled by mutableStateOf(false)
+    fun setOled(v: Boolean) { oled = v; sp.edit().putBoolean("oled", v).apply(); Palette.set(if (v) 0xFF000000L else 0xFF0D0D11L) }
 
     /** Тема по обложке: при смене трека акцент берётся из обложки сам. */
     var accentFromCover by mutableStateOf(false)

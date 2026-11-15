@@ -192,55 +192,53 @@ internal val GlassState = HazeState()
 
 @Composable
 internal fun MiniPlayer(ps: PlayerUi, c: MediaController, onOpen: () -> Unit) {
+    val ctx = LocalContext.current
     val coverArgbNow by produceState<Long?>(null, ps.artUrl) {
         value = null
         value = withContext(kotlinx.coroutines.Dispatchers.IO) { coverAverage(ps.artUrl) }
     }
     LaunchedEffect(coverArgbNow) {
         val v = coverArgbNow
-        if (Settings.accentFromCover && v != null) {
-            Settings.setAccentArgb(vivid(v))
-        }
+        if (Settings.accentFromCover && v != null) Settings.setAccentArgb(vivid(v))
     }
-    val glassShape = RoundedCornerShape(26.dp)
-    val glassBrush = Brush.verticalGradient(
-        listOf(Color.White.copy(alpha = 0.14f), Color.White.copy(alpha = 0.05f)),
-    )
+    val glassShape = RoundedCornerShape(28.dp)
     Column(
         Modifier.padding(horizontal = 12.dp, vertical = 8.dp).fillMaxWidth()
-            .shadow(16.dp, glassShape, clip = false)
+            .shadow(20.dp, glassShape, clip = false)
             .clip(glassShape)
             .hazeChild(
                 state = GlassState,
                 shape = glassShape,
                 style = HazeStyle(
-                    tint = Color.White.copy(alpha = 0.12f),
-                    blurRadius = 28.dp,
-                    noiseFactor = 0.04f,
+                    tint = Color.White.copy(alpha = 0.04f),
+                    blurRadius = 32.dp,
+                    noiseFactor = 0.03f,
                 ),
             )
-            .background(Panel.copy(alpha = 0.22f))
-            .background(glassBrush)
+            .background(Color.Black.copy(alpha = 0.18f))
             .border(1.dp, Color.White.copy(alpha = 0.12f), glassShape),
     ) {
         val target = if (ps.duration > 0) (ps.position.toFloat() / ps.duration).coerceIn(0f, 1f) else 0f
         val progress by androidx.compose.animation.core.animateFloatAsState(target, label = "miniProgress")
-        val liked = Favorites.has(ps.mediaId)
-        val ctx = LocalContext.current
+        LinearProgressIndicator(
+            progress = { progress },
+            modifier = Modifier.fillMaxWidth().height(3.dp), color = Acc, trackColor = Color(0x22FFFFFF),
+        )
         var swipe by remember { mutableFloatStateOf(0f) }
+        val liked = Favorites.has(ps.mediaId)
         Column(
-            Modifier.fillMaxWidth().clickable(onClick = onOpen)
+            Modifier.fillMaxWidth()
                 .pointerInput(Unit) {
                     detectHorizontalDragGestures(
                         onDragStart = { swipe = 0f },
                         onDragEnd = { if (swipe > 120f) c.seekToPrevious() else if (swipe < -120f) c.seekToNext() },
                     ) { _, d -> swipe += d }
                 }
-                .padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 10.dp),
+                .padding(start = 10.dp, end = 4.dp, top = 10.dp, bottom = 6.dp),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().clickable(onClick = onOpen), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(56.dp).clip(RoundedCornerShape(10.dp))) { Cover(ps.title.ifEmpty { "?" }, 56.dp, square = true, img = ps.artUrl) }
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     AnimatedContent(targetState = ps.title, transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(150)) }, label = "miniTitle") { tt ->
                         Text(tt, color = TextC, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 16.sp, fontWeight = FontWeight.Bold)
@@ -248,34 +246,34 @@ internal fun MiniPlayer(ps: PlayerUi, c: MediaController, onOpen: () -> Unit) {
                     Text(ps.artist, color = Mut, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 13.sp)
                 }
                 IconButton(onClick = { ps.mediaId?.let { Favorites.toggle(it) } }) {
-                    Icon(Icons.Filled.Favorite, "В любимое", tint = if (liked) Color(0xFFFF4D6D) else Mut, modifier = Modifier.size(24.dp))
+                    Icon(Icons.Filled.Favorite, "В любимое", tint = if (liked) Acc else Mut, modifier = Modifier.size(22.dp))
                 }
-                IconButton(onClick = { c.seekToPrevious() }) { Icon(Icons.Default.SkipPrevious, "Назад", tint = TextC, modifier = Modifier.size(28.dp)) }
+                IconButton(onClick = { c.seekToPrevious() }) { Icon(Icons.Default.SkipPrevious, "Назад", tint = TextC) }
                 Box(
-                    Modifier.size(56.dp).clip(CircleShape).background(Acc).clickable { if (c.isPlaying) c.pause() else c.play() },
+                    Modifier.size(50.dp).clip(CircleShape).background(Acc).clickable { if (c.isPlaying) c.pause() else c.play() },
                     contentAlignment = Alignment.Center,
                 ) {
                     AnimatedContent(targetState = ps.isPlaying, transitionSpec = { (fadeIn(tween(180)) + scaleIn(initialScale = 0.7f)) togetherWith (fadeOut(tween(120)) + scaleOut(targetScale = 0.7f)) }, label = "miniPlayPause") { playing ->
-                        Icon(if (playing) Icons.Default.Pause else Icons.Default.PlayArrow, "Пауза/играть", tint = OnAcc, modifier = Modifier.size(30.dp))
+                        Icon(if (playing) Icons.Default.Pause else Icons.Default.PlayArrow, "Пауза/играть", tint = OnAcc)
                     }
                 }
-                IconButton(onClick = { c.seekToNext() }) { Icon(Icons.Default.SkipNext, "Далее", tint = TextC, modifier = Modifier.size(28.dp)) }
+                IconButton(onClick = { c.seekToNext() }) { Icon(Icons.Default.SkipNext, "Далее", tint = TextC) }
             }
-            Spacer(Modifier.height(6.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.Shuffle, "Перемешать", tint = Mut, modifier = Modifier.size(20.dp).clickable { c.shuffleModeEnabled = !c.shuffleModeEnabled })
-                Spacer(Modifier.width(10.dp))
+            Spacer(Modifier.height(4.dp))
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = { c.shuffleModeEnabled = !c.shuffleModeEnabled }, modifier = Modifier.size(36.dp)) {
+                    Icon(Icons.Filled.Shuffle, "Перемешать", tint = if (c.shuffleModeEnabled) Acc else Mut, modifier = Modifier.size(20.dp))
+                }
                 Text(fmt(ps.position), color = Mut, fontSize = 12.sp)
                 Spacer(Modifier.width(8.dp))
-                LinearProgressIndicator(
-                    progress = { progress },
-                    modifier = Modifier.weight(1f).height(3.dp), color = TextC, trackColor = Color(0x33FFFFFF),
-                )
+                Box(Modifier.weight(1f).height(4.dp).clip(CircleShape).background(Color(0x33FFFFFF))) {
+                    Box(Modifier.fillMaxWidth(progress).fillMaxHeight().background(TextC))
+                }
                 Spacer(Modifier.width(8.dp))
                 Text(fmt(ps.duration), color = Mut, fontSize = 12.sp)
-                Spacer(Modifier.width(10.dp))
+                Spacer(Modifier.width(6.dp))
                 Box(
-                    Modifier.size(38.dp).clip(CircleShape).background(Acc).clickable {
+                    Modifier.size(40.dp).clip(CircleShape).background(Acc).clickable {
                         val id = ps.mediaId
                         val repo = BuildConfig.GH_REPOS.split(',').map { it.trim() }.firstOrNull { it.isNotEmpty() }
                         if (id != null && repo != null) {
