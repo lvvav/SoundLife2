@@ -788,6 +788,7 @@ private fun SearchScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen
 
 // ───────────────────────── Медиатека ─────────────────────────
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) -> Unit, onMenu: () -> Unit = {}) {
     var addMenu by remember { mutableStateOf(false) }
