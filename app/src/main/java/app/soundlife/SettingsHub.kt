@@ -78,8 +78,8 @@ internal fun SettingsHub(onClose: () -> Unit) {
         "info" -> "Информация и поддержка"
         else -> "Настройки"
     }
-    Dialog(onDismissRequest = back, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Column(Modifier.fillMaxSize().background(Bg).padding(top = 12.dp)) {
+    Dialog(onDismissRequest = back, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
+        Column(Modifier.fillMaxSize().background(Bg).windowInsetsPadding(WindowInsets.systemBars).padding(top = 12.dp)) {
             Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад", tint = TextC) }
                 Text(title, color = TextC, fontSize = 22.sp, fontWeight = FontWeight.Bold)
