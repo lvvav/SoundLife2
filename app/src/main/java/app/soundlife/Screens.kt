@@ -185,8 +185,12 @@ internal class AlbumInfo(val name: String, val artist: String, val tracks: List<
 
 /** Каталог: треки, сгруппированные по артистам и альбомам (альбом = папка в music/). */
 internal class Catalog(val tracks: List<Track>) {
+    // Один артист — одна карточка, даже если в тегах написано по-разному (CUPSIZE / Cupsize)
     val artists: List<Pair<String, List<Track>>> =
-        tracks.groupBy { it.artist }.toList().sortedBy { it.first.lowercase() }
+        tracks.groupBy { it.artist.trim().lowercase() }.map { (_, ts) ->
+            val name = ts.groupingBy { it.artist.trim() }.eachCount().maxByOrNull { it.value }?.key ?: ts.first().artist
+            name to ts
+        }.sortedBy { it.first.lowercase() }
     val albums: List<AlbumInfo> =
         tracks.filter { it.album.isNotBlank() }.groupBy { it.album }.map { (name, ts) ->
             val main = ts.groupingBy { it.artist }.eachCount().maxByOrNull { it.value }?.key ?: ""
