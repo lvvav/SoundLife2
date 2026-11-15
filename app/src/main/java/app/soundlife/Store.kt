@@ -175,7 +175,8 @@ object Settings {
         privLibrary = p.getBoolean("priv_lib", true)
         privNow = p.getBoolean("priv_now", true)
         siteT = p.getLong("site_set_t", 0L)
-        Palette.set(if (p.getBoolean("oled", false)) 0xFF000000L else 0xFF0D0D11L)
+        oledBlack = p.getBoolean("oled", false)
+        Palette.set(if (oledBlack) 0xFF000000L else 0xFF0D0D11L)
         anim = p.getBoolean("f_anim", true)
         adminOn = p.getBoolean("f_admin", false)
     }
