@@ -116,6 +116,18 @@ class PlaybackService : MediaSessionService() {
 
     private fun refresh() { session?.setCustomLayout(layout()) }
 
+    /** Кнопки уведомления (Now Bar): обрабатываем здесь, потом отдаём системе */
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (::player.isInitialized) when (intent?.action) {
+            NowBar.A_SHUF -> player.shuffleModeEnabled = !player.shuffleModeEnabled
+            NowBar.A_PREV -> player.seekToPrevious()
+            NowBar.A_NEXT -> player.seekToNext()
+            NowBar.A_PLAY -> if (player.isPlaying) player.pause() else player.play()
+            NowBar.A_LIKE -> player.currentMediaItem?.mediaId?.let { Favorites.toggle(it) }
+        }
+        return super.onStartCommand(intent, flags, startId)
+    }
+
     override fun onCreate() {
         super.onCreate()
         Favorites.init(this)

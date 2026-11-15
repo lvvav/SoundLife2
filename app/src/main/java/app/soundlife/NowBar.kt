@@ -5,9 +5,11 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
+import android.graphics.drawable.Icon
 import android.content.Intent
 import android.os.Build
 import androidx.media3.common.Player
+import app.soundlife.PlaybackService
 
 /**
  * Статусная строка / Now Bar (Android 16+, One UI 8.5): «живое» уведомление
@@ -17,6 +19,19 @@ import androidx.media3.common.Player
 object NowBar {
     private const val CHANNEL = "now_bar2"
     private const val ID = 9001
+    const val A_SHUF = "app.soundlife.NB_SHUF"
+    const val A_PREV = "app.soundlife.NB_PREV"
+    const val A_PLAY = "app.soundlife.NB_PLAY"
+    const val A_NEXT = "app.soundlife.NB_NEXT"
+    const val A_LIKE = "app.soundlife.NB_LIKE"
+
+    private fun action(ctx: Context, icon: Int, label: String, act: String, code: Int): Notification.Action {
+        val pi = PendingIntent.getService(
+            ctx, code, Intent(ctx, PlaybackService::class.java).setAction(act),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        return Notification.Action.Builder(Icon.createWithResource(ctx, icon), label, pi).build()
+    }
 
     fun update(ctx: Context, p: Player, token: android.media.session.MediaSession.Token? = null) {
         val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -43,7 +58,14 @@ object NowBar {
             .setOnlyAlertOnce(true)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setCategory(Notification.CATEGORY_TRANSPORT)
-            .also { b -> token?.let { b.setStyle(Notification.MediaStyle().setMediaSession(it)) } }
+            .also { b -> token?.let { b.setStyle(Notification.MediaStyle().setMediaSession(it).setShowActionsInCompactView(1, 2, 3)) } }
+        // Кнопки: перемешка слева, сердечко справа; между ними назад, пауза/играть, далее
+        val liked = Favorites.has(item.mediaId)
+        b.addAction(action(ctx, if (p.shuffleModeEnabled) R.drawable.ic_shuffle_on else R.drawable.ic_shuffle_off, "Перемешка", A_SHUF, 1))
+        b.addAction(action(ctx, android.R.drawable.ic_media_previous, "Назад", A_PREV, 2))
+        b.addAction(action(ctx, if (p.isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play, "Пауза или играть", A_PLAY, 3))
+        b.addAction(action(ctx, android.R.drawable.ic_media_next, "Далее", A_NEXT, 4))
+        b.addAction(action(ctx, if (liked) R.drawable.ic_heart_filled else R.drawable.ic_heart, "Любимое", A_LIKE, 5))
         b.extras.putBoolean("android.requestPromotedOngoing", true)
         if (Build.VERSION.SDK_INT >= 36) {
             // Флаги Live Updates (Android 16): коротко показываем в статусной строке
