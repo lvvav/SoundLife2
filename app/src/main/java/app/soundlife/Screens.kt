@@ -785,7 +785,8 @@ private fun SearchScreen(cat: Catalog, ps: PlayerUi, c: MediaController?, onOpen
 private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) -> Unit, onSettings: () -> Unit) {
     var showNewest by remember { mutableStateOf(false) }
     if (showNewest) NewestDialog(cat.tracks, c) { showNewest = false }
-    var filter by rememberSaveable { mutableIntStateOf(0) } // 0 всё, 1 плейлисты, 2 альбомы, 3 артисты
+    // -1 = всё вместе; 0 плейлисты, 1 альбомы, 2 исполнители, 3 люди. Повторное нажатие на пилюлю возвращает «всё»
+    var filter by rememberSaveable { mutableIntStateOf(-1) }
     var grid by rememberSaveable { mutableStateOf(true) }
     var showNew by remember { mutableStateOf(false) }
     var newName by remember { mutableStateOf("") }
@@ -806,10 +807,10 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
     val favCount = Favorites.ids.count { id -> cat.tracks.any { it.path == id } }
     val myArtists = cat.artists.filter { it.first in subA }
     val myAlbums = cat.albums.filter { it.name in subB }
-    val showPl = filter == 0
-    val showAl = filter == 1
-    val showAr = filter == 2
-    val showPeople = filter == 3
+    val showPl = filter <= 0
+    val showAl = filter == 1 || filter < 0
+    val showAr = filter == 2 || filter < 0
+    val showPeople = filter == 3 || filter < 0
     val empty = (!showPl || names.isEmpty()) && (!showAl || myAlbums.isEmpty()) && (!showAr || myArtists.isEmpty()) && Subs.ym.isEmpty()
 
     Column(Modifier.fillMaxSize()) {
@@ -826,7 +827,7 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
         ) {
             itemsIndexed(listOf("Плейлисты", "Альбомы", "Исполнители", "Люди")) { i, label ->
                 FilterChip(
-                    selected = filter == i, onClick = { filter = i }, label = { Text(label, fontSize = 16.sp, fontWeight = FontWeight.Medium) },
+                    selected = filter == i, onClick = { filter = if (filter == i) -1 else i }, label = { Text(label, fontSize = 16.sp, fontWeight = FontWeight.Medium) },
                     modifier = Modifier.height(44.dp),
                     colors = FilterChipDefaults.filterChipColors(
                         containerColor = Hover, labelColor = TextC,
@@ -836,7 +837,7 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
                 )
             }
         }
-        if (filter == 0) {
+        if (filter <= 0) {
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 12.dp, end = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text("Недавние", color = TextC, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                 Icon(Icons.AutoMirrored.Filled.List, "Список", tint = Mut, modifier = Modifier.size(24.dp))
@@ -848,13 +849,13 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
             }
         }
         LazyColumn(contentPadding = PaddingValues(bottom = 16.dp + LocalBarInset.current)) {
-            if (filter == 0) {
+            if (filter <= 0) {
                 item { LibRow("Любимые треки", plural(favCount), "liked", icon = Icons.Filled.Favorite) { onOpen(Detail.Liked) } }
                 if (Wishes.list.isNotEmpty()) {
                     item { LibRow("Хочу послушать", plural(Wishes.list.size), "wish", icon = Icons.Filled.Add) { onOpen(Detail.Wish) } }
                 }
             }
-            if (filter == 0 && Auth.signedIn) {
+            if (filter <= 0 && Auth.signedIn) {
                 item { LibRow("Сообщения", "Диалоги", "chat", icon = Icons.AutoMirrored.Filled.Send) { onOpen(Detail.Inbox) } }
                 item { LibRow("Новый совместный плейлист", "Со списком друзей", "newcollab", icon = Icons.Filled.Add) { newCollab = true } }
                 items(collabs, key = { "cl:${it.id}" }) { p ->
@@ -886,6 +887,7 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
             if (showAl) items(Subs.ym.filter { it.kind == "album" }, key = { "yalb:" + it.id }) { s ->
                 LibRow(s.title, "Альбом · ${s.sub}", s.title, img = s.img) { onOpen(Detail.YmAlbumPage(s.id, s.title, s.sub, s.img)) }
             }
+            if (showAl && grid && filter < 0 && myAlbums.isNotEmpty()) item { SectionTitle("Альбомы") }
             if (showAl && grid) item { AlbumGrid(myAlbums) { onOpen(Detail.Album(it.name)) } }
             if (showAl && !grid) items(myAlbums, key = { "b:" + it.name }) { a ->
                 LibRow(a.name, "Альбом · ${a.artist}", a.name, img = a.img) { onOpen(Detail.Album(a.name)) }
@@ -893,6 +895,7 @@ private fun LibraryScreen(cat: Catalog, c: MediaController?, onOpen: (Detail) ->
             if (showAr) items(Subs.ym.filter { it.kind == "artist" }, key = { "yar:" + it.id }) { s ->
                 LibRow(s.title, "Исполнитель · Яндекс Музыка", s.title, round = true, img = s.img) { onOpen(Detail.YmArtistPage(s.id, s.title, s.img)) }
             }
+            if (showAr && grid && filter < 0 && myArtists.isNotEmpty()) item { SectionTitle("Исполнители") }
             if (showAr && grid) item { ArtistGrid(myArtists) { onOpen(Detail.Artist(it.first)) } }
             if (showAr && !grid) items(myArtists, key = { "a:" + it.first }) { a ->
                 LibRow(a.first, "Артист", a.first, round = true, img = artistImg(a.first, a.second)) { onOpen(Detail.Artist(a.first)) }
