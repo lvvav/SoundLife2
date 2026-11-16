@@ -10,8 +10,8 @@ android {
         applicationId 'app.soundlife.s3'
         minSdk 16
         targetSdk 19
-        versionCode 5
-        versionName '0.6 s3'
+        versionCode 6
+        versionName '0.7 s3'
         buildConfigField 'String', 'SUPA_URL', '"https://zpmzqgxwqoisfvahfhqc.supabase.co"'
         buildConfigField 'String', 'SUPA_KEY', '"sb_publishable_EJD_GXiloGMd6DDMt87G8Q_PxYmI8eF"'
     }

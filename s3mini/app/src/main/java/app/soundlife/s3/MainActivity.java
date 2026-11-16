@@ -138,7 +138,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
-        Tls.install();
+        Tls.install(this);
         Session.init(this);
         setTitle("SoundLife");
 

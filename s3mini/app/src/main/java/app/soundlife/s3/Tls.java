@@ -1,8 +1,15 @@
 package app.soundlife.s3;
 
+import android.content.Context;
+
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.security.KeyStore;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 
 import org.conscrypt.Conscrypt;
 
@@ -10,6 +17,9 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 
 /**
  * На Android 4.1 TLS 1.2 есть, но по умолчанию выключен. GitHub, Supabase и Яндекс
@@ -22,11 +32,43 @@ final class Tls {
 
     private Tls() {}
 
-    static void install() {
-        // Сначала Conscrypt (встроен в APK): у него современный TLS 1.2.
+    static void install(Context context) {
+        // Conscrypt (встроен в APK) + доверенные корни: системные и из папки assets/roots.
         try {
+            KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
+            ks.load(null, null);
+
+            TrustManagerFactory sys = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            sys.init((KeyStore) null);
+            int n = 0;
+            for (TrustManager tm : sys.getTrustManagers()) {
+                if (tm instanceof X509TrustManager) {
+                    for (X509Certificate c : ((X509TrustManager) tm).getAcceptedIssuers()) {
+                        ks.setCertificateEntry("sys" + n++, c);
+                    }
+                }
+            }
+
+            CertificateFactory cf = CertificateFactory.getInstance("X.509");
+            String[] files = context.getAssets().list("roots");
+            if (files != null) {
+                for (String f : files) {
+                    InputStream in = context.getAssets().open("roots/" + f);
+                    try {
+                        int i = 0;
+                        for (Certificate c : cf.generateCertificates(in)) {
+                            ks.setCertificateEntry(f + i++, c);
+                        }
+                    } finally {
+                        in.close();
+                    }
+                }
+            }
+
+            TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            tmf.init(ks);
             SSLContext ctx = SSLContext.getInstance("TLSv1.2", Conscrypt.newProvider());
-            ctx.init(null, null, null);
+            ctx.init(null, tmf.getTrustManagers(), null);
             HttpsURLConnection.setDefaultSSLSocketFactory(new TlsFactory(ctx.getSocketFactory()));
             return;
         } catch (Throwable ignored) {

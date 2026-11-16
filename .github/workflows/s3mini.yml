@@ -18,6 +18,16 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
+      - name: Скачать корневые сертификаты (для Android 4.1)
+        run: |
+          mkdir -p s3mini/app/src/main/assets/roots
+          cd s3mini/app/src/main/assets/roots
+          curl -fsSL -o digicert_g2.pem https://cacerts.digicert.com/DigiCertGlobalRootG2.crt.pem || echo "нет DigiCert G2"
+          curl -fsSL -o digicert_ca.pem https://cacerts.digicert.com/DigiCertGlobalRootCA.crt.pem || echo "нет DigiCert CA"
+          curl -fsSL -o digicert_ev.pem https://cacerts.digicert.com/DigiCertHighAssuranceEVRootCA.crt.pem || echo "нет DigiCert EV"
+          curl -fsSL -o isrg_x1.pem https://letsencrypt.org/certs/isrgrootx1.pem || echo "нет ISRG X1"
+          curl -fsSL -o gts_roots.pem https://pki.goog/roots.pem || echo "нет GTS"
+          ls -l
       - name: Build Debug APK
         working-directory: s3mini
         run: gradle assembleDebug
