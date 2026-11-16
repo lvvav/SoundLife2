@@ -44,7 +44,18 @@ final class RemoteLib {
             String name = path.substring(path.lastIndexOf('/') + 1);
             String title = name.substring(0, name.lastIndexOf('.'));
             String folder = path.substring(0, path.lastIndexOf('/') + 1);
-            songs.add(new Song(title, "", url(path), covers.get(folder)));
+            // Имя файла «Исполнитель - Название», папка — альбом
+            String artist = "";
+            String shown = title;
+            int dash = title.indexOf(" - ");
+            if (dash > 0) {
+                artist = title.substring(0, dash);
+                shown = title.substring(dash + 3);
+            }
+            String rel = folder.substring(FOLDER.length());
+            if (rel.endsWith("/")) rel = rel.substring(0, rel.length() - 1);
+            String album = rel.contains("/") ? rel.substring(rel.lastIndexOf('/') + 1) : rel;
+            songs.add(new Song(shown, artist, url(path), covers.get(folder), album));
         }
         return songs;
     }

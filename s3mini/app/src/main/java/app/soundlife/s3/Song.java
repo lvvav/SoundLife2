@@ -6,11 +6,17 @@ public class Song {
     public final String artist;
     public final String path;
     public final String art;
+    public final String album;
 
     public Song(String title, String artist, String path, String art) {
+        this(title, artist, path, art, "");
+    }
+
+    public Song(String title, String artist, String path, String art, String album) {
         this.title = title;
         this.artist = artist;
         this.path = path;
         this.art = art;
+        this.album = album == null ? "" : album;
     }
 }
