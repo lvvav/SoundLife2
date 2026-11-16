@@ -97,6 +97,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        Tls.install();
         Session.init(this);
         setTitle("SoundLife");
         FrameLayout root = new FrameLayout(this);
@@ -347,7 +348,7 @@ public class MainActivity extends Activity {
                     });
                 } catch (final Exception e) {
                     runOnUiThread(new Runnable() {
-                        public void run() { onlineStatus.setText("Не удалось загрузить: " + e.getMessage()); }
+                        public void run() { onlineStatus.setText("Не удалось загрузить: " + Tls.text(e)); }
                     });
                 }
             }
@@ -397,7 +398,7 @@ public class MainActivity extends Activity {
                     });
                 } catch (final Exception e) {
                     runOnUiThread(new Runnable() {
-                        public void run() { loginStatus.setText(e.getMessage()); }
+                        public void run() { loginStatus.setText(Tls.text(e)); }
                     });
                 }
             }
