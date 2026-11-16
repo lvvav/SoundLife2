@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 
+import org.conscrypt.Conscrypt;
+
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
@@ -21,6 +23,15 @@ final class Tls {
     private Tls() {}
 
     static void install() {
+        // Сначала Conscrypt (встроен в APK): у него современный TLS 1.2.
+        try {
+            SSLContext ctx = SSLContext.getInstance("TLSv1.2", Conscrypt.newProvider());
+            ctx.init(null, null, null);
+            HttpsURLConnection.setDefaultSSLSocketFactory(new TlsFactory(ctx.getSocketFactory()));
+            return;
+        } catch (Throwable ignored) {
+            // Не получилось: ниже системный стек, как раньше.
+        }
         try {
             SSLContext ctx;
             try {
