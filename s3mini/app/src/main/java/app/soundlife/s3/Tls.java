@@ -39,7 +39,9 @@ final class Tls {
     static String text(Throwable e) {
         for (Throwable t = e; t != null; t = t.getCause()) {
             if (t instanceof javax.net.ssl.SSLException) {
-                return "Не удалось установить защищённое соединение (TLS). Проверьте интернет и попробуйте ещё раз.";
+                String detail = t.getMessage() == null ? "" : t.getMessage();
+                if (detail.length() > 160) detail = detail.substring(0, 160);
+                return "Не удалось установить защищённое соединение (TLS). Проверьте интернет и попробуйте ещё раз. Техническая причина: " + detail;
             }
         }
         return e.getMessage();
@@ -57,8 +59,21 @@ final class Tls {
             if (s instanceof SSLSocket) {
                 SSLSocket ssl = (SSLSocket) s;
                 ssl.setEnabledProtocols(PROTOCOLS);
+                String[] suites = preferred(ssl.getSupportedCipherSuites());
+                if (suites.length > 0) ssl.setEnabledCipherSuites(suites);
             }
             return s;
+        }
+
+        /** Современные шифры (ECDHE + AES), которые принимают GitHub и Supabase. Слабые и экспортные отбрасываем. */
+        private static String[] preferred(String[] supported) {
+            java.util.List<String> out = new java.util.ArrayList<String>();
+            for (String c : supported) {
+                if (c.contains("ECDHE") && c.contains("AES") && !c.contains("anon") && !c.contains("NULL") && !c.contains("EXPORT")) {
+                    out.add(c);
+                }
+            }
+            return out.toArray(new String[out.size()]);
         }
 
         @Override public String[] getDefaultCipherSuites() { return base.getDefaultCipherSuites(); }
