@@ -43,7 +43,7 @@ object Updater {
     }
 
     /** Скачивает APK в кэш приложения и возвращает файл. */
-    fun download(ctx: Context, latest: Latest): File {
+    fun download(ctx: Context, latest: Latest, onProgress: (Int) -> Unit = {}): File {
         val dir = File(ctx.cacheDir, "update").apply { mkdirs() }
         val file = File(dir, APK_NAME)
         val c = (URL(latest.apkUrl).openConnection() as HttpURLConnection).apply {
@@ -52,7 +52,20 @@ object Updater {
             instanceFollowRedirects = true
         }
         if (c.responseCode !in 200..299) throw GhError(c.responseCode, "Не удалось скачать обновление (код ${c.responseCode}).")
-        c.inputStream.use { input -> file.outputStream().use { input.copyTo(it) } }
+        val total = c.contentLengthLong
+        var done = 0L
+        c.inputStream.use { input ->
+            file.outputStream().use { out ->
+                val buf = ByteArray(16 * 1024)
+                while (true) {
+                    val n = input.read(buf)
+                    if (n < 0) break
+                    out.write(buf, 0, n)
+                    done += n
+                    if (total > 0) onProgress((done * 100 / total).toInt())
+                }
+            }
+        }
         return file
     }
 

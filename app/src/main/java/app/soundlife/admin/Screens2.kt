@@ -206,13 +206,15 @@ fun SettingsScreen(s: Session, onLogout: () -> Unit) {
         if (latest != null) {
             Button(
                 onClick = {
-                    busy = true; status = "Скачиваю…"
+                    busy = true; status = "Скачиваю… 0%"
                     scope.launch {
                         try {
-                            val f = withContext(Dispatchers.IO) { Updater.download(ctx, latest) }
+                            val f = withContext(Dispatchers.IO) {
+                                Updater.download(ctx, latest) { pct -> scope.launch { status = "Скачиваю… $pct%" } }
+                            }
                             file = f
                             status = "Скачано. Нажмите «Установить»."
-                        } catch (e: Exception) { status = e.message ?: "Не удалось скачать" }
+                        } catch (e: Exception) { status = "Не удалось скачать: " + (e.message ?: e.javaClass.simpleName) }
                         finally { busy = false }
                     }
                 },
