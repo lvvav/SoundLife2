@@ -112,7 +112,7 @@ fun Title(text: String, sub: String? = null) {
 
 /** Плитка для сетки альбомов и артистов. */
 @Composable
-fun GridCard(title: String, sub: String, cover: String?, round: Boolean, onClick: () -> Unit, selected: Boolean = false) {
+fun GridCard(title: String, sub: String, cover: String?, round: Boolean, selected: Boolean = false, onClick: () -> Unit) {
     Column(
         Modifier.clip(RoundedCornerShape(14.dp)).background(if (selected) PanelHi else Color.Transparent).clickable(onClick = onClick).padding(6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
