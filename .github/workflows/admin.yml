@@ -25,11 +25,15 @@ jobs:
           name: SoundLifeAdmin-APK
           path: app/build/outputs/apk/debug/app-debug.apk
       - name: Publish admin APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk SoundLifeAdmin.apk
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk SoundLifeAdmin.apk
+          echo "$GITHUB_SHA" > admin-version.txt
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: admin-latest
           name: SoundLife Admin (последняя сборка)
-          files: SoundLifeAdmin.apk
+          files: |
+            SoundLifeAdmin.apk
+            admin-version.txt
           overwrite_files: true
           prerelease: true

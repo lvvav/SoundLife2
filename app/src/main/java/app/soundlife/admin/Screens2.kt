@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -168,11 +169,69 @@ fun UploadScreen(s: Session, onDone: (String) -> Unit) {
 
 @Composable
 fun SettingsScreen(s: Session, onLogout: () -> Unit) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var status by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    var found by remember { mutableStateOf<Updater.Latest?>(null) }
+    var file by remember { mutableStateOf<java.io.File?>(null) }
+
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Настройки", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold)
         Text("Хранилище: ${s.repo}", color = Mut)
         Text("Ветка: ${s.branch}", color = Mut)
         Text("Папка с музыкой: ${s.folder}", color = Mut)
+        Text("Версия: ${BuildConfig.VERSION_NAME} (${BuildConfig.COMMIT.take(7)})", color = Mut)
+
+        Spacer(Modifier.height(8.dp))
+        Text("Обновление", fontWeight = FontWeight.Bold)
+        if (status.isNotEmpty()) Text(status, color = Acc)
+        Button(
+            onClick = {
+                busy = true; status = "Проверяю…"; found = null; file = null
+                scope.launch {
+                    try {
+                        val latest = withContext(Dispatchers.IO) { Updater.check() }
+                        if (latest == null) status = "Установлена последняя версия."
+                        else { found = latest; status = "Есть новая сборка. Скачать и установить?" }
+                    } catch (e: Exception) { status = e.message ?: "Ошибка проверки" }
+                    finally { busy = false }
+                }
+            },
+            enabled = !busy,
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Panel, contentColor = Acc),
+        ) { Text(if (busy) "Работаю…" else "Проверить обновление", fontWeight = FontWeight.Bold) }
+        val latest = found
+        if (latest != null) {
+            Button(
+                onClick = {
+                    busy = true; status = "Скачиваю…"
+                    scope.launch {
+                        try {
+                            val f = withContext(Dispatchers.IO) { Updater.download(ctx, latest) }
+                            file = f
+                            status = "Скачано. Нажмите «Установить»."
+                        } catch (e: Exception) { status = e.message ?: "Не удалось скачать" }
+                        finally { busy = false }
+                    }
+                },
+                enabled = !busy && file == null,
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Acc, contentColor = Bg),
+            ) { Text("Скачать обновление", fontWeight = FontWeight.Bold) }
+        }
+        val f = file
+        if (f != null) {
+            Button(
+                onClick = {
+                    try { Updater.install(ctx, f) } catch (e: Exception) { status = e.message ?: "Не удалось открыть установщик" }
+                },
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Acc, contentColor = Bg),
+            ) { Text("Установить", fontWeight = FontWeight.Bold) }
+        }
+
         Spacer(Modifier.height(12.dp))
         Button(
             onClick = onLogout,

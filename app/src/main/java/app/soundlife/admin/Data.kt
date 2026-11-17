@@ -51,7 +51,7 @@ class Library(
             val card = cards.optJSONObject(k)
             if (list.isEmpty() && card == null) return@mapNotNull null
             val name = card?.optString("n").takeUnless { it.isNullOrBlank() }
-                ?: list.firstOrNull()?.artist?.ifBlank { null } ?: k
+                ?: list.firstOrNull()?.artist?.ifBlank { null } ?: if (k.isBlank()) "Без исполнителя" else k
             ArtistCard(k, name, card?.optString("img")?.ifBlank { null }, card?.optString("bio")?.ifBlank { null }, list)
         }.sortedBy { it.name.lowercase() }
     }

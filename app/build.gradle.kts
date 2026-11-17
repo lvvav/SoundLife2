@@ -17,9 +17,20 @@ android {
         buildConfigField("String", "GH_REPO", "\"lvvav/wavelab\"")
         buildConfigField("String", "GH_BRANCH", "\"main\"")
         buildConfigField("String", "GH_FOLDER", "\"music\"")
+        // Версия сборки: коммит из CI (для проверки обновлений), dev — локально
+        buildConfigField("String", "COMMIT", "\"${System.getenv("GITHUB_SHA") ?: "dev"}\"")
+    }
+    // Один ключ для всех сборок, иначе обновление поверх установленной версии не встанет
+    signingConfigs {
+        create("shared") {
+            storeFile = file("admin.jks")
+            storePassword = "soundlife-admin"
+            keyAlias = "admin"
+            keyPassword = "soundlife-admin"
+        }
     }
     buildTypes {
-        release { isMinifyEnabled = false }
+        getByName("debug") { signingConfig = signingConfigs.getByName("shared") }
     }
     buildFeatures { compose = true; buildConfig = true }
     compileOptions {
