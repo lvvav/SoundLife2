@@ -11,8 +11,8 @@ android {
         applicationId = "app.soundlife.admin"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.1.1 alpha"
+        versionCode = 3
+        versionName = "0.2.0 alpha"
         // Хранилище с музыкой (как у сайта): папка music, ветка по умолчанию
         buildConfigField("String", "GH_REPO", "\"lvvav/wavelab\"")
         buildConfigField("String", "GH_BRANCH", "\"main\"")

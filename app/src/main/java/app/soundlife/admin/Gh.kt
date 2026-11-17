@@ -12,7 +12,7 @@ class GhError(val code: Int, msg: String) : Exception(msg)
 /** Один файл хранилища. */
 data class Node(val path: String, val sha: String, val size: Long)
 
-/** Работа с GitHub REST API через HttpURLConnection (без лишних библиотек). */
+/** Работа с GitHub REST API через HttpURLConnection. */
 object Gh {
     private fun call(token: String, method: String, url: String, body: JSONObject? = null): String {
         val c = (URL(url).openConnection() as HttpURLConnection).apply {
@@ -56,19 +56,30 @@ object Gh {
             .map { Node(it.getString("path"), it.getString("sha"), it.optLong("size")) }
     }
 
+    /** Содержимое файла по sha (base64 декодируется в байты). */
+    fun blobBytes(token: String, repo: String, sha: String): ByteArray {
+        val j = JSONObject(call(token, "GET", "https://api.github.com/repos/$repo/git/blobs/$sha"))
+        return Base64.decode(j.getString("content").replace("\n", ""), Base64.DEFAULT)
+    }
+
     /** Загружает бинарный файл как blob и возвращает его sha. */
     fun blob(token: String, repo: String, bytes: ByteArray): String {
         val body = JSONObject().put("content", Base64.encodeToString(bytes, Base64.NO_WRAP)).put("encoding", "base64")
         return JSONObject(call(token, "POST", "https://api.github.com/repos/$repo/git/blobs", body)).getString("sha")
     }
 
-    /** Один коммит: добавляет/заменяет файлы (path → sha blob). */
-    fun commit(token: String, repo: String, branch: String, files: Map<String, String>, message: String) {
+    /**
+     * Один коммит: добавляет/заменяет файлы (path → sha blob) и удаляет файлы (sha = null).
+     * Удаления и замены делаются одним деревом, как в веб-админке.
+     */
+    fun commit(token: String, repo: String, branch: String, files: Map<String, String?>, message: String) {
         val base = "https://api.github.com/repos/$repo"
         val head = JSONObject(call(token, "GET", "$base/git/ref/heads/$branch")).getJSONObject("object").getString("sha")
         val baseTree = JSONObject(call(token, "GET", "$base/git/commits/$head")).getJSONObject("tree").getString("sha")
         val tree = JSONArray()
-        files.forEach { (p, sha) -> tree.put(JSONObject().put("path", p).put("mode", "100644").put("type", "blob").put("sha", sha)) }
+        files.forEach { (p, sha) ->
+            tree.put(JSONObject().put("path", p).put("mode", "100644").put("type", "blob").put("sha", sha ?: JSONObject.NULL))
+        }
         val nt = JSONObject(call(token, "POST", "$base/git/trees", JSONObject().put("base_tree", baseTree).put("tree", tree))).getString("sha")
         val nc = JSONObject(call(token, "POST", "$base/git/commits",
             JSONObject().put("message", message).put("tree", nt).put("parents", JSONArray().put(head)))).getString("sha")

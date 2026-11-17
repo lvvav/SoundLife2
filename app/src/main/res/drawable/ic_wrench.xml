@@ -1,28 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Тонкий гаечный ключ цвета акцента SoundLife, внутри безопасной зоны иконки -->
+<!-- Гаечный ключ цвета акцента SoundLife: сплошной, внутри безопасной зоны адаптивной иконки -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <!-- головка с открытым зевом -->
-    <path
-        android:strokeColor="#C6FF3D"
-        android:strokeWidth="1.4"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:fillColor="#00000000"
-        android:pathData="M12.95,5.95 A3.6,3.6 0 1 0 18.05,5.95" />
-    <!-- ручка -->
-    <path
-        android:strokeColor="#C6FF3D"
-        android:strokeWidth="1.4"
-        android:strokeLineCap="round"
-        android:fillColor="#00000000"
-        android:pathData="M13.6,10.4 L6.6,17.4" />
-    <!-- зевы головки -->
-    <path
-        android:strokeColor="#C6FF3D"
-        android:strokeWidth="1.4"
-        android:strokeLineCap="round"
-        android:fillColor="#00000000"
-        android:pathData="M12.95,5.95 L14.6,7.6 M18.05,5.95 L16.4,7.6" />
+    <group
+        android:scaleX="0.66"
+        android:scaleY="0.66"
+        android:translateX="4.08"
+        android:translateY="4.08">
+        <path
+            android:fillColor="#C6FF3D"
+            android:pathData="M22.7,19l-9.1,-9.1c0.9,-2.3 0.4,-5 -1.5,-6.9 -2,-2 -5,-2.4 -7.4,-1.3L9,6 6,9 1.6,4.7C0.4,7.1 0.9,10.1 2.9,12.1c1.9,1.9 4.6,2.4 6.9,1.5l9.1,9.1c0.4,0.4 1,0.4 1.4,0l2.3,-2.3c0.5,-0.4 0.5,-1.1 0.1,-1.4z" />
+    </group>
 </vector>
