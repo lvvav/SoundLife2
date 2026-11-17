@@ -91,21 +91,35 @@ class Library(
             inFolder.filter { IMAGE.containsMatchIn(it.path) && it.path.substringAfterLast('/').substringBeforeLast('.').lowercase() in setOf("cover", "folder", "artwork") }
                 .forEach { covers[it.path.substringBeforeLast('/') + "/"] = it.path }
 
-            val tracks = inFolder.filter { AUDIO.containsMatchIn(it.path) }.map { n ->
+            val audio = inFolder.filter { AUDIO.containsMatchIn(it.path) }
+            // Теги MP3 читаем параллельно, как сайт: по несколько байт из начала файла
+            val pool = java.util.concurrent.Executors.newFixedThreadPool(6)
+            val tagFutures = audio.associateWith { n ->
+                pool.submit(java.util.concurrent.Callable { runCatching { Tags.read(Raw.url(repo, branch, n.path)) }.getOrNull() })
+            }
+            val tagInfo = tagFutures.mapValues { (_, f) -> runCatching { f.get() }.getOrNull() }
+            pool.shutdown()
+
+            val tracks = audio.map { n ->
                 val m = meta.optJSONObject(n.path) ?: JSONObject()
+                val tag = tagInfo[n] ?: Tags.Info()
                 val base = n.path.substringAfterLast('/').substringBeforeLast('.')
                 val parts = base.split(" - ", limit = 2)
                 val fileArtist = if (parts.size == 2) parts[0] else ""
                 val fileTitle = if (parts.size == 2) parts[1] else base
                 val parentDir = n.path.substringBeforeLast('/').removePrefix("$folder/").substringAfterLast('/')
+                fun pick(key: String, vararg fallbacks: String): String {
+                    m.optString(key).takeIf { it.isNotBlank() }?.let { return it }
+                    return fallbacks.firstOrNull { it.isNotBlank() }.orEmpty()
+                }
                 Track(
                     path = n.path, sha = n.sha, size = n.size,
-                    artist = m.optString("a").ifBlank { fileArtist },
-                    title = m.optString("t").ifBlank { fileTitle },
-                    album = m.optString("al").ifBlank { if (parentDir.isBlank() || parentDir == folder) "" else parentDir },
-                    year = m.optString("y"),
-                    number = m.optString("n"),
-                    disc = m.optString("d"),
+                    artist = pick("a", tag.artist, fileArtist),
+                    title = pick("t", tag.title, fileTitle),
+                    album = pick("al", tag.album, if (parentDir.isBlank() || parentDir == folder) "" else parentDir),
+                    year = pick("y", tag.year),
+                    number = pick("n", tag.track),
+                    disc = pick("d", tag.disc),
                     genre = parentDir,
                     cover = m.optString("aa").ifBlank { null } ?: covers[n.path.substringBeforeLast('/') + "/"],
                 )
