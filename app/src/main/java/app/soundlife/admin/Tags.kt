@@ -64,7 +64,18 @@ object Tags {
         }
         val code = c.responseCode
         if (code != 200 && code != 206) return null
-        return c.inputStream.use { it.readBytes() }
+        // Если сервер отдал весь файл (200), читаем только нужный кусок и закрываем соединение
+        val want = to - from + 1
+        return c.inputStream.use { input ->
+            val out = java.io.ByteArrayOutputStream()
+            val buf = ByteArray(8192)
+            while (out.size() < want) {
+                val n = input.read(buf, 0, minOf(buf.size, want - out.size()))
+                if (n < 0) break
+                out.write(buf, 0, n)
+            }
+            out.toByteArray()
+        }
     }
 
     private fun synchsafe(b: ByteArray, o: Int): Int =

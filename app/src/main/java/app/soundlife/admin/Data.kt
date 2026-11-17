@@ -97,8 +97,9 @@ class Library(
             val tagFutures = audio.associateWith { n ->
                 pool.submit(java.util.concurrent.Callable { runCatching { Tags.read(Raw.url(repo, branch, n.path)) }.getOrNull() })
             }
-            val tagInfo = tagFutures.mapValues { (_, f) -> runCatching { f.get() }.getOrNull() }
-            pool.shutdown()
+            // Не ждём бесконечно: файл без тегов за 20 секунд просто пропускаем
+            val tagInfo = tagFutures.mapValues { (_, f) -> runCatching { f.get(20, java.util.concurrent.TimeUnit.SECONDS) }.getOrNull() }
+            pool.shutdownNow()
 
             val tracks = audio.map { n ->
                 val m = meta.optJSONObject(n.path) ?: JSONObject()
