@@ -157,17 +157,66 @@ fun AlbumsScreen(lib: Library, repo: String, branch: String, onOpen: (Album) -> 
     }
 }
 
-/** Артисты: круглые карточки с фото. */
+/** Артисты: сетка с обложками. «Выбрать» включает режим объединения нескольких вариантов имени. */
 @Composable
-fun ArtistsScreen(lib: Library, repo: String, branch: String, onOpen: (ArtistCard) -> Unit) {
+fun ArtistsScreen(lib: Library, repo: String, branch: String, onOpen: (ArtistCard) -> Unit, onMerge: (List<ArtistCard>, String) -> Unit) {
     if (lib.artists.isEmpty()) { Empty("Артистов пока нет"); return }
+    var pick by remember { mutableStateOf(false) }
+    var chosen by remember { mutableStateOf(setOf<String>()) }
+    var askName by remember { mutableStateOf(false) }
+    var newName by remember { mutableStateOf("") }
+    val picked = lib.artists.filter { it.key in chosen }
+
     Column(Modifier.fillMaxSize()) {
         Title("Артисты", "${lib.artists.size}")
-        LazyVerticalGrid(GridCells.Fixed(2), Modifier.fillMaxSize(), contentPadding = PaddingValues(10.dp)) {
-            items(lib.artists) { a ->
-                GridCard(a.name, "${a.tracks.size} тр.", a.img?.let { Raw.url(repo, branch, it) }, round = true) { onOpen(a) }
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = { pick = !pick; chosen = emptySet() }) { Text(if (pick) "Отмена" else "Выбрать", color = Acc) }
+            Spacer(Modifier.weight(1f))
+            if (pick && chosen.isNotEmpty()) {
+                Button(
+                    onClick = {
+                        newName = picked.groupingBy { it.name }.eachCount().maxByOrNull { it.value }?.key ?: picked.first().name
+                        askName = true
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Acc, contentColor = Bg),
+                ) { Text("Объединить (${chosen.size})", fontWeight = FontWeight.Bold) }
             }
         }
+        if (pick) Text("Отметьте варианты одного исполнителя, затем «Объединить».", color = Mut, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 16.dp))
+        LazyVerticalGrid(GridCells.Fixed(2), Modifier.fillMaxSize(), contentPadding = PaddingValues(10.dp)) {
+            items(lib.artists) { a ->
+                GridCard(
+                    a.name, "${a.tracks.size} тр.", a.img?.let { Raw.url(repo, branch, it) }, round = true,
+                    onClick = {
+                        if (!pick) onOpen(a)
+                        else chosen = if (a.key in chosen) chosen - a.key else chosen + a.key
+                    },
+                    selected = a.key in chosen,
+                )
+            }
+        }
+    }
+
+    if (askName) {
+        AlertDialog(
+            onDismissRequest = { askName = false },
+            title = { Text("Одно имя для ${picked.sumOf { it.tracks.size }} треков") },
+            text = {
+                Column {
+                    Text(picked.joinToString(", ") { it.name }, color = Mut, fontSize = 13.sp)
+                    Spacer(Modifier.height(10.dp))
+                    OutlinedTextField(newName, { newName = it }, label = { Text("Имя исполнителя") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    askName = false
+                    onMerge(picked, newName)
+                    chosen = emptySet(); pick = false
+                }) { Text("Объединить", color = Acc) }
+            },
+            dismissButton = { TextButton(onClick = { askName = false }) { Text("Отмена", color = Mut) } },
+        )
     }
 }
 

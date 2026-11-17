@@ -89,6 +89,22 @@ object Save {
         return "Сохранено: ${targets.size} шт."
     }
 
+    /** Объединение исполнителей: меняет поле «a» в meta.json у треков, файлы не трогает. */
+    fun setArtist(s: Session, lib: Library, tracks: List<Track>, name: String): String {
+        val clean = name.trim()
+        if (clean.isBlank()) return "Имя не может быть пустым."
+        val meta = JSONObject(lib.meta.toString())
+        for (t in tracks) {
+            val m = meta.optJSONObject(t.path) ?: JSONObject()
+            m.put("a", clean)
+            meta.put(t.path, m)
+        }
+        if (meta.toString() == lib.meta.toString()) return "Ничего не изменено."
+        val files = mapOf(metaPath(s) to Gh.blob(s.token, s.repo, meta.toString(1).toByteArray()))
+        Gh.commit(s.token, s.repo, s.branch, files, "Исполнитель «$clean»: треков ${tracks.size}")
+        return "Исполнитель «$clean» у ${tracks.size} треков."
+    }
+
     /** Карточка артиста: имя, описание и фото. */
     fun artistCard(s: Session, lib: Library, key: String, origName: String, name: String, bio: String, photo: ByteArray?, removePhoto: Boolean): String {
         val meta = JSONObject(lib.meta.toString())

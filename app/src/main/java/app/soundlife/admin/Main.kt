@@ -169,6 +169,7 @@ private fun ScreenHost(
     onLogout: () -> Unit,
 ) {
     val branch = s.branch
+    val scope = rememberCoroutineScope()
     when (page) {
         Page.Home -> HomeScreen(
             lib, s.repo, branch,
@@ -187,7 +188,18 @@ private fun ScreenHost(
             playingPath = playingPath,
         )
         Page.Albums -> AlbumsScreen(lib, s.repo, branch) { go(Page.AlbumView(it.key)) }
-        Page.Artists -> ArtistsScreen(lib, s.repo, branch) { go(Page.ArtistView(it.key)) }
+        Page.Artists -> ArtistsScreen(
+            lib, s.repo, branch,
+            onOpen = { go(Page.ArtistView(it.key)) },
+            onMerge = { cards, name ->
+                scope.launch {
+                    try {
+                        val msg = withContext(Dispatchers.IO) { Save.setArtist(s, lib, cards.flatMap { it.tracks }, name) }
+                        say(msg); reloadLib()
+                    } catch (e: Exception) { say(e.message ?: "Не удалось объединить") }
+                }
+            },
+        )
         Page.Wishes -> WishesScreen(s, lib) { msg -> say(msg); reloadLib() }
         Page.Upload -> UploadScreen(s) { msg -> say(msg); reloadLib() }
         Page.Settings -> SettingsScreen(s, onLogout)
